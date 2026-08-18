@@ -1,0 +1,43 @@
+import { WebSocketServer } from 'ws';
+import { getCachedEvents } from '../services/calendarService.js';
+import { getCachedTasks } from '../services/todoService.js';
+import { getCurrentView } from '../state/viewState.js';
+
+const HEARTBEAT_MS = 30000;
+
+let wss = null;
+
+export function initWebSocket(server) {
+  wss = new WebSocketServer({ server, path: '/ws' });
+
+  wss.on('connection', (socket) => {
+    socket.isAlive = true;
+    socket.on('pong', () => {
+      socket.isAlive = true;
+    });
+
+    // Hydrate a newly (re)connected display immediately rather than making
+    // it wait for the next poll cycle to have anything to show.
+    socket.send(JSON.stringify({ type: 'calendar', data: getCachedEvents() }));
+    socket.send(JSON.stringify({ type: 'todo', data: getCachedTasks() }));
+    socket.send(JSON.stringify({ type: 'view', data: getCurrentView() }));
+  });
+
+  const heartbeat = setInterval(() => {
+    wss.clients.forEach((socket) => {
+      if (!socket.isAlive) return socket.terminate();
+      socket.isAlive = false;
+      socket.ping();
+    });
+  }, HEARTBEAT_MS);
+
+  wss.on('close', () => clearInterval(heartbeat));
+}
+
+export function broadcast(message) {
+  if (!wss) return;
+  const payload = JSON.stringify(message);
+  wss.clients.forEach((socket) => {
+    if (socket.readyState === socket.OPEN) socket.send(payload);
+  });
+}

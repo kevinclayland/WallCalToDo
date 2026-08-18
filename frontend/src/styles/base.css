@@ -1,0 +1,103 @@
+* {
+  box-sizing: border-box;
+  /* Wall display has no mouse — hide the cursor. Remove if you add touch/mouse controls. */
+  cursor: none;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.view {
+  flex: 1;
+  padding: var(--space-lg);
+  overflow-y: auto;
+}
+
+.view__title {
+  font-size: var(--font-size-title);
+  margin: 0 0 var(--space-md);
+}
+
+.view__empty {
+  color: var(--color-text-muted);
+}
+
+.event-list,
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.event-list__item,
+.todo-list__item {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.event-list__time {
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.event-list__location {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.todo-list__item.is-completed {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.todo-list__due {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.status-bar__dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--color-offline);
+}
+
+.status-bar__dot.is-connected {
+  background: var(--color-online);
+}

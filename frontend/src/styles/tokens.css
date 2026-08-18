@@ -1,0 +1,30 @@
+/*
+ * Placeholder design tokens.
+ *
+ * Every component reads colors/spacing/type from these CSS custom
+ * properties instead of hardcoding values. When the real design is ready,
+ * this file (and only this file, ideally) should need to change — swap
+ * the values below, add new tokens as needed, components don't care.
+ */
+:root {
+  --color-bg: #0b0d10;
+  --color-surface: #15181c;
+  --color-text: #f5f5f5;
+  --color-text-muted: #9aa0a6;
+  --color-accent: #4f8cff;
+  --color-border: #2a2e33;
+  --color-online: #3ddc84;
+  --color-offline: #ff5252;
+
+  --font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-size-title: 3rem;
+  --font-size-body: 1.5rem;
+  --font-size-small: 1rem;
+
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 2rem;
+  --space-lg: 4rem;
+
+  --radius: 12px;
+}

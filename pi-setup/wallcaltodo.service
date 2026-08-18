@@ -1,0 +1,15 @@
+[Unit]
+Description=WallCalToDo backend (Google/Microsoft sync + web server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/home/pi/WallCalToDo/server
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=5
+User=pi
+EnvironmentFile=/home/pi/WallCalToDo/server/.env
+
+[Install]
+WantedBy=multi-user.target
