@@ -1,4 +1,4 @@
-import { pollCalendar, resetSyncToken as resetCalendarSyncToken } from './calendarService.js';
+import { pollCalendar, resetSyncTokens as resetCalendarSyncTokens } from './calendarService.js';
 import { pollTodo } from './todoService.js';
 import { broadcast } from '../ws/hub.js';
 import { config } from '../config.js';
@@ -9,7 +9,7 @@ let lastFullResyncDay = null;
 async function runPoll() {
   const today = new Date().toDateString();
   if (lastFullResyncDay !== today) {
-    resetCalendarSyncToken();
+    resetCalendarSyncTokens();
     lastFullResyncDay = today;
   }
 

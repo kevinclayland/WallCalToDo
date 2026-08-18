@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import * as googleAuth from '../auth/googleAuth.js';
 import * as microsoftAuth from '../auth/microsoftAuth.js';
+import { pollCalendar } from '../services/calendarService.js';
+import { broadcast } from '../ws/hub.js';
 
 export const authRouter = Router();
 
@@ -10,15 +12,20 @@ function connectedPage(name) {
   </body></html>`;
 }
 
-// These are meant to be visited once from a laptop/phone on the same
-// network as the Pi to grant access — not something the kiosk display
-// itself needs to open.
+// These are meant to be visited from a laptop/phone on the same network as
+// the Pi to grant access — the "Add Google Account" button in the
+// companion app links here directly.
 authRouter.get('/google', (req, res) => res.redirect(googleAuth.getAuthUrl()));
 
 authRouter.get('/google/callback', async (req, res) => {
   try {
     await googleAuth.exchangeCode(req.query.code);
-    res.send(connectedPage('Google Calendar'));
+    // Pull the new account's events in immediately rather than waiting for
+    // the next poll interval, then send the browser back to the companion
+    // app so the just-connected account shows up right away.
+    const { changed, events } = await pollCalendar();
+    if (changed) broadcast({ type: 'calendar', data: events });
+    res.redirect('/companion');
   } catch (err) {
     res.status(500).send(`Google auth failed: ${err.message}`);
   }

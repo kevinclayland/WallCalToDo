@@ -1,0 +1,200 @@
+/*
+ * Plain, functional styling — this is a utility settings app, not the
+ * portfolio-piece display, so it doesn't need a token/theme system.
+ */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f4f5f7;
+  color: #1a1d21;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.page__header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+}
+
+.page__subtitle {
+  margin: 0 0 1.5rem;
+  color: #6b7280;
+}
+
+.banner {
+  background: #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.banner--error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.account-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.account-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.account-card__header h2 {
+  margin: 0;
+  font-size: 1rem;
+  word-break: break-all;
+}
+
+.account-card__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.calendar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid #f0f1f3;
+}
+
+.calendar-row:first-child {
+  border-top: none;
+}
+
+.calendar-row--empty {
+  color: #6b7280;
+}
+
+.calendar-row__swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.calendar-row__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch__track {
+  position: absolute;
+  inset: 0;
+  background: #d1d5db;
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.switch__track::before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+
+.switch input:checked + .switch__track {
+  background: #22c55e;
+}
+
+.switch input:checked + .switch__track::before {
+  transform: translateX(18px);
+}
+
+.button {
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.button--ghost {
+  background: #f0f1f3;
+  color: #1a1d21;
+}
+
+.button--danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.button--primary {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+}
+
+.add-account {
+  display: block;
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1rem;
+}

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { authRouter } from './routes/auth.js';
 import { apiRouter } from './routes/api.js';
+import { accountsRouter } from './routes/accounts.js';
 import { initWebSocket } from './ws/hub.js';
 import { startPolling } from './services/poller.js';
 
@@ -14,15 +15,28 @@ const app = express();
 app.use(express.json());
 app.use('/auth', authRouter);
 app.use('/api', apiRouter);
+app.use('/api', accountsRouter);
 
-// The frontend is built separately (frontend/dist) and served here so the
-// Pi only has to run one process. During development, run the Vite dev
-// server instead (see frontend/README) and this static block just won't
-// find anything, which is fine.
+// Two frontends, one server: the kiosk display (frontend/dist, served at
+// "/") and the companion settings app (companion/dist, served at
+// "/companion"). Both are built separately and just picked up here so the
+// Pi only has to run one process. In dev, run each app's own Vite server
+// instead — these static blocks simply won't find anything, which is fine.
 const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');
+const companionDist = path.join(__dirname, '..', '..', 'companion', 'dist');
+
+app.use('/companion', express.static(companionDist));
+app.get('/companion/*', (req, res, next) => {
+  res.sendFile(path.join(companionDist, 'index.html'), (err) => {
+    if (err) next();
+  });
+});
+
 app.use(express.static(frontendDist));
 app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/auth')) return next();
+  if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/companion')) {
+    return next();
+  }
   res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
     if (err) next();
   });
