@@ -1,7 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { getCachedEvents } from '../services/calendarService.js';
 import { getCachedTasks } from '../services/todoService.js';
-import { getCurrentView } from '../state/viewState.js';
 
 const HEARTBEAT_MS = 30000;
 
@@ -20,7 +19,6 @@ export function initWebSocket(server) {
     // it wait for the next poll cycle to have anything to show.
     socket.send(JSON.stringify({ type: 'calendar', data: getCachedEvents() }));
     socket.send(JSON.stringify({ type: 'todo', data: getCachedTasks() }));
-    socket.send(JSON.stringify({ type: 'view', data: getCurrentView() }));
   });
 
   const heartbeat = setInterval(() => {

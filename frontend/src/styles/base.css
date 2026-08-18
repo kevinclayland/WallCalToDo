@@ -19,16 +19,28 @@ body {
   font-size: var(--font-size-body);
 }
 
+/*
+ * Portrait wall display: calendar on top, to-do list on the bottom, both
+ * visible at once — no switching. Row sizes are a placeholder split
+ * (calendar gets slightly more room); adjust the fractions or make them
+ * equal once the real design calls for something specific.
+ */
 .app {
   height: 100%;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 1.1fr 1fr auto;
 }
 
 .view {
-  flex: 1;
+  /* min-height: 0 lets a grid row's content scroll instead of forcing the
+     row to grow past its share of the screen. */
+  min-height: 0;
   padding: var(--space-lg);
   overflow-y: auto;
+}
+
+.view--calendar {
+  border-bottom: 1px solid var(--color-border);
 }
 
 .view__title {
@@ -100,4 +112,9 @@ body {
 
 .status-bar__dot.is-connected {
   background: var(--color-online);
+}
+
+.status-bar__label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }

@@ -1,15 +1,15 @@
 # WallCalToDo
 
-A wall-mounted display (old monitor + Raspberry Pi) that shows a Google
-Calendar and a Microsoft To Do list, switchable with a physical button.
+A wall-mounted display (old monitor, portrait orientation, + Raspberry Pi)
+that shows a Google Calendar and a Microsoft To Do list at the same time —
+calendar on top, to-do list on the bottom.
 
 ## How it works
 
 ```
 Google Calendar API  ─┐
-                       ├─ poll on interval (delta/sync tokens) ─ Node backend ─ WebSocket ─ React kiosk app (Chromium fullscreen)
-Microsoft Graph API  ─┘                                              │
-                                                                       └── POST /api/view/toggle ← GPIO button script
+                       ├─ poll on interval (delta/sync tokens) ─ Node backend ─ WebSocket ─ React kiosk app (Chromium fullscreen, portrait)
+Microsoft Graph API  ─┘
 ```
 
 - **server/** — Node/Express backend. Handles OAuth for both accounts,
@@ -17,11 +17,12 @@ Microsoft Graph API  ─┘                                              │
   fetches what changed), and pushes updates to connected displays over a
   WebSocket. Serves the built frontend too, so the Pi only runs one
   process in production.
-- **frontend/** — React app with two placeholder views (Calendar, To Do).
-  All colors/spacing/type come from `frontend/src/styles/tokens.css` so
-  the real design can drop in later without touching component logic.
-- **pi-setup/** — systemd units for the backend + kiosk Chromium autostart,
-  and a Python script for the physical GPIO button.
+- **frontend/** — React app that renders both views stacked in a single
+  screen (calendar top, to-do bottom). All colors/spacing/type come from
+  `frontend/src/styles/tokens.css` so the real design can drop in later
+  without touching component logic.
+- **pi-setup/** — systemd unit for the backend + kiosk Chromium autostart
+  (configured for a portrait-rotated display).
 
 ## Auto-update behavior
 
@@ -46,13 +47,30 @@ behind home NAT. Polling with delta/sync tokens gets you effectively the
 same result (updates within seconds to a minute) without that
 infrastructure.
 
-## The physical button
+## Portrait orientation
 
-Wire a momentary push button between GPIO17 and GND on the Pi. When
-pressed, `pi-setup/button/button.py` posts to `POST /api/view/toggle` on
-the backend, which flips the current view and broadcasts it to every
-connected display over the WebSocket — the switch is instant, not a
-polling delay. See `pi-setup/button/` for the systemd service.
+The layout (`frontend/src/styles/base.css`) is a simple CSS grid: calendar
+takes the top ~55% of the screen, the to-do list the bottom ~45%, with a
+divider between them. This works regardless of the monitor's physical
+rotation — the *browser* just needs to think of the screen as portrait
+(narrow width, tall height), which means the Pi's display output itself
+needs to be rotated to match how the monitor is physically mounted.
+
+Rotate the display at the OS level, not in the browser:
+
+- **Bookworm (Wayland/labwc)**: `wlr-randr --output <output> --transform 90`
+  (use `270` if 90 comes out upside down for your mount), run once to test,
+  then add it to `~/.config/labwc/autostart` above the kiosk launch line.
+  `wlr-randr` lists your output name.
+- **Bullseye and earlier (X11)**: add `xrandr --output <output> --rotate left`
+  (or `right`) to the autostart script before Chromium launches. `xrandr`
+  (no args) lists your output name.
+
+If the monitor is on an HDMI-to-something adapter that doesn't like
+software rotation, some HDMI/DSI displays also support rotation via
+`/boot/firmware/config.txt` (`display_rotate` or `video=` framebuffer
+params) — check your specific display's docs if `wlr-randr`/`xrandr`
+doesn't take effect.
 
 ## Getting started
 
@@ -76,13 +94,13 @@ cd frontend && npm install && npm run dev
 ```
 
 Open `http://localhost:5173` (Vite dev server, proxies API/WS calls to the
-backend on :3000). Visit `http://localhost:3000/auth/google` and
+backend on :3000). To preview the portrait layout on a normal monitor,
+just shrink the browser window narrow — no special dev flag needed.
+
+Visit `http://localhost:3000/auth/google` and
 `http://localhost:3000/auth/microsoft` once each to connect the two
 accounts — do this from a laptop/phone on the same network, not something
 the kiosk display itself needs to do.
-
-Press `v` on the keyboard to flip views without a physical button wired up
-yet.
 
 ### 3. Deploy to the Pi
 
@@ -98,8 +116,8 @@ sudo cp pi-setup/wallcaltodo.service /etc/systemd/system/
 sudo systemctl enable --now wallcaltodo
 ```
 
-Then follow `pi-setup/kiosk/README.md` to autostart Chromium in kiosk mode,
-and `pi-setup/button/` to wire up and enable the GPIO button service.
+Then follow `pi-setup/kiosk/README.md` to rotate the display and autostart
+Chromium in kiosk mode.
 
 ## Design
 
@@ -107,5 +125,5 @@ This repo intentionally ships with placeholder UI only
 (`frontend/src/styles/tokens.css` + minimal component markup) — the real
 visual design is being done separately as a portfolio piece. Swapping in
 the final design should only mean editing `tokens.css` and the component
-markup/styles; the data layer (OAuth, polling, WebSocket push, view state)
-doesn't need to change.
+markup/styles; the data layer (OAuth, polling, WebSocket push) doesn't
+need to change.
