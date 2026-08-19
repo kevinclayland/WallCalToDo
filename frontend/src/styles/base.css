@@ -68,14 +68,23 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-sm) var(--space-md);
+  /* Stacked, not side-by-side: a portrait screen is too narrow for a time
+     column and a title column to both get real room without one of them
+     overflowing or getting crushed. */
   display: flex;
-  justify-content: space-between;
-  gap: var(--space-md);
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.event-list__time {
+.event-list__time,
+.todo-list__due {
   color: var(--color-accent);
-  white-space: nowrap;
+  font-size: var(--font-size-small);
+}
+
+.event-list__title,
+.todo-list__title {
+  overflow-wrap: break-word;
 }
 
 .event-list__location {
@@ -90,8 +99,6 @@ body {
 
 .todo-list__due {
   color: var(--color-text-muted);
-  font-size: var(--font-size-small);
-  white-space: nowrap;
 }
 
 .status-bar {
