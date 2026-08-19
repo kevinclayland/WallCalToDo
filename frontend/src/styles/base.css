@@ -35,24 +35,116 @@ body {
   /* min-height: 0 lets a grid row's content scroll instead of forcing the
      row to grow past its share of the screen. */
   min-height: 0;
-  padding: var(--space-lg);
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
   overflow-y: auto;
 }
 
 .view--calendar {
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
 }
 
 .view__title {
   font-size: var(--font-size-title);
-  margin: 0 0 var(--space-md);
+  margin: 0 0 var(--space-sm);
 }
 
 .view__empty {
   color: var(--color-text-muted);
 }
 
-.event-list,
+/*
+ * Month grid: a header row of weekday labels, then one row per week. The
+ * row count is set inline per-component (months have 5 or 6 weeks), so
+ * this only needs to define columns.
+ */
+.calendar-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--color-border);
+  border: 1px solid var(--color-border);
+}
+
+.calendar-grid__weekday {
+  background: var(--color-bg);
+  padding: var(--space-xs);
+  text-align: center;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.calendar-cell {
+  background: var(--color-surface);
+  padding: var(--space-xs);
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.calendar-cell--outside {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.calendar-cell--today .calendar-cell__day {
+  color: var(--color-bg);
+  background: var(--color-accent);
+  border-radius: 50%;
+}
+
+.calendar-cell__day {
+  font-size: var(--font-size-small);
+  width: 1.6em;
+  height: 1.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-cell__events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.calendar-cell__event {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-cell__event::before {
+  content: '';
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: var(--event-color, var(--color-accent));
+  flex-shrink: 0;
+}
+
+.calendar-cell__more {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
 .todo-list {
   list-style: none;
   margin: 0;
@@ -62,34 +154,18 @@ body {
   gap: var(--space-sm);
 }
 
-.event-list__item,
 .todo-list__item {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-sm) var(--space-md);
-  /* Stacked, not side-by-side: a portrait screen is too narrow for a time
-     column and a title column to both get real room without one of them
-     overflowing or getting crushed. */
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.event-list__time,
-.todo-list__due {
-  color: var(--color-accent);
-  font-size: var(--font-size-small);
-}
-
-.event-list__title,
 .todo-list__title {
   overflow-wrap: break-word;
-}
-
-.event-list__location {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-small);
 }
 
 .todo-list__item.is-completed {
@@ -99,6 +175,7 @@ body {
 
 .todo-list__due {
   color: var(--color-text-muted);
+  font-size: var(--font-size-small);
 }
 
 .status-bar {
