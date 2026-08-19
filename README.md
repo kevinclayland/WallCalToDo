@@ -102,24 +102,222 @@ outside your Wi-Fi** by design; if you want to tweak settings while out of
 the house, put something like Tailscale on the Pi rather than exposing it
 publicly.
 
+**Connecting a new account has to happen on the Pi's own screen**, not
+from your phone — see step 8 of the setup guide below for why. Everyday
+use of the companion app (toggling calendars, disconnecting an account)
+works fine from your phone once accounts are already connected.
+
 There's deliberately no theme switching here yet — that's waiting on the
 real visual design (see "Design" below).
 
-## Getting started
+## Hardware notes
 
-### 1. Credentials
+**Use a Pi 4 if you have one.** It has more RAM and a faster CPU than
+older Pis, which matters because Chromium itself is the heaviest thing
+running here — the Node backend is tiny by comparison (tens of MB of RAM).
+A Pi 3B (1GB RAM) can run this, but with less headroom: stick to
+Raspberry Pi OS Lite + a minimal kiosk compositor rather than the full
+desktop if that's what you're using, and avoid heavy CSS effects
+(blurs, constant animation) in the eventual design. Bandwidth and storage
+are non-issues either way — this app's data is tiny JSON, not media.
 
-- **Google**: Cloud Console → APIs & Services → Credentials → OAuth client
-  ID (Web application). Add `http://localhost:3000/auth/google/callback`
-  as an authorized redirect URI. Enable the Google Calendar API.
-- **Microsoft**: Azure Portal → App registrations → New registration. Add
-  `http://localhost:3000/auth/microsoft/callback` as a Web redirect URI,
-  and grant the `Tasks.Read` delegated permission under API permissions.
+One cable gotcha: the Pi 4 uses **micro-HDMI**, not full-size HDMI like
+the Pi 3. Check what your monitor cable needs before you buy an adapter.
 
-Copy `server/.env.example` to `server/.env` and fill in both sets of
-credentials.
+## Setup guide
 
-### 2. Run it
+Step-by-step, assuming no prior experience with any of this. It walks
+through everything: flashing the SD card, installing the software,
+connecting your accounts, and mounting it on the wall.
+
+### What you'll need
+
+- A Raspberry Pi (4 recommended — see "Hardware notes" above) with a
+  power supply and a microSD card (16GB+; a card marked "A1" or "A2"
+  boots noticeably faster than an unrated one)
+- A monitor with an HDMI input, plus the right cable: the Pi 4 has a
+  **micro-HDMI** port, older Pis have full-size HDMI
+- A laptop/desktop computer, just to flash the SD card
+- A Google account (for the calendar) and, if you want the to-do list, a
+  Microsoft account with Tasks/To Do items
+- The Pi and your phone/computer all on the same home Wi-Fi network
+
+### 1. Flash the SD card
+
+1. On your computer, install [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
+2. Insert the microSD card, open Imager.
+3. **Choose OS** → Raspberry Pi OS (64-bit) — the full version with a
+   desktop, not "Lite". Kiosk mode needs a desktop environment to run
+   Chromium in.
+4. **Choose Storage** → your SD card.
+5. Before writing, click the gear/settings icon (**OS customisation**) and set:
+   - **Hostname** — pick something memorable, e.g. `wallcaltodo` (you'll
+     use `wallcaltodo.local` to reach it later).
+   - **Username/password** — this guide uses `pi` throughout; if you pick
+     something else, swap it in every command below and in the two
+     `pi-setup/*.service` files (they reference `/home/pi/...` and `User=pi`).
+   - **Wi-Fi** — your network name and password, so it connects on first boot.
+   - **Enable SSH** — with password authentication.
+6. Write the image, wait for it to finish, then eject the card.
+
+### 2. First boot
+
+1. Put the SD card in the Pi, connect the monitor and power. Wait a
+   minute or two for the first boot to finish.
+2. From your computer, open a terminal and SSH in:
+   ```
+   ssh pi@wallcaltodo.local
+   ```
+   (Use the hostname you set in step 1. Accept the fingerprint prompt,
+   enter the password you set.)
+
+### 3. Update the OS and install Node.js
+
+Run on the Pi (over the SSH session):
+
+```
+sudo apt update && sudo apt full-upgrade -y
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs git
+node -v   # should print v20.x — if it doesn't, something above failed
+```
+
+### 4. Create your OAuth credentials
+
+This is the fiddliest part, but it's a one-time setup in each provider's
+developer console.
+
+**Google:**
+1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and create a new project (top-left project switcher → New Project).
+2. **APIs & Services → Library**, search "Google Calendar API", click **Enable**.
+3. **APIs & Services → OAuth consent screen**: choose **External**, fill in an app name and your email, save. Under **Test users**, add every Google account you plan to connect (the app stays unpublished/personal-use, so only listed test users can sign in).
+4. **APIs & Services → Credentials → Create Credentials → OAuth client ID**. Application type: **Web application**. Under **Authorized redirect URIs**, add exactly:
+   ```
+   http://localhost:3000/auth/google/callback
+   ```
+   (It has to be `localhost`, not the Pi's hostname/IP — Google only allows plain `http://` for the literal loopback address. This is why account-connecting happens on the Pi's own screen in step 8, not from your phone.)
+5. Save, then copy the **Client ID** and **Client Secret** — you'll paste these into `.env` in step 5.
+
+**Microsoft:**
+1. Go to [portal.azure.com](https://portal.azure.com/) → **App registrations → New registration**.
+2. Name it anything. Under **Redirect URI**, choose platform **Web** and enter:
+   ```
+   http://localhost:3000/auth/microsoft/callback
+   ```
+   (Same `localhost`-only restriction as Google.)
+3. After creating it, go to **Certificates & secrets → New client secret**, create one, and copy its **value** immediately (it's hidden after you leave the page).
+4. Go to **API permissions → Add a permission → Microsoft Graph → Delegated permissions**, search for and add `Tasks.Read`.
+5. Copy the **Application (client) ID** from the app's Overview page.
+
+### 5. Get the code onto the Pi and configure it
+
+```
+git clone https://github.com/kevinclayland/WallCalToDo.git
+cd WallCalToDo
+cp server/.env.example server/.env
+nano server/.env
+```
+
+Fill in `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MS_CLIENT_ID`, and
+`MS_CLIENT_SECRET` with the values from step 4 (leave the `*_REDIRECT_URI`
+lines as they already are). Save and exit nano with `Ctrl+O`, `Enter`,
+`Ctrl+X`.
+
+### 6. Install dependencies and build both apps
+
+```
+cd ~/WallCalToDo/server && npm install
+cd ~/WallCalToDo/frontend && npm install && npm run build
+cd ~/WallCalToDo/companion && npm install && npm run build
+```
+
+This takes a few minutes on a Pi — that's normal.
+
+### 7. Run the backend as a background service
+
+```
+sudo cp ~/WallCalToDo/pi-setup/wallcaltodo.service /etc/systemd/system/
+sudo systemctl enable --now wallcaltodo
+sudo systemctl status wallcaltodo
+```
+
+The status output should say **active (running)**. If it doesn't, run
+`sudo journalctl -u wallcaltodo -n 50` to see why — the most common cause
+is a typo in `server/.env`.
+
+### 8. Connect your accounts
+
+Do this step on the Pi's own screen (i.e. with a keyboard/mouse on the
+monitor connected to the Pi, in its normal desktop — not kiosk mode yet,
+and not from your phone). This is required because the redirect URLs
+registered in step 4 are `localhost`-only, which only means something to
+a browser running on the Pi itself.
+
+1. Open the Pi's Chromium (Menu → Internet → Chromium) and go to:
+   ```
+   http://localhost:3000/companion
+   ```
+2. Tap **+ Add Google account**, sign in, grant access. Repeat for every
+   Google account you want on the display.
+3. Visit `http://localhost:3000/auth/microsoft` once to connect your
+   Microsoft To Do account.
+4. Back in the companion app, you should see each account listed with its
+   calendars — toggle any off you don't want shown.
+
+Then check `http://localhost:3000` in that same browser — you should see
+your real events/tasks. If it's empty, give it a minute (it polls every
+60 seconds by default) and check `sudo journalctl -u wallcaltodo -f`.
+
+### 9. Rotate the display and enable kiosk mode
+
+Follow **`pi-setup/kiosk/README.md`** — it covers rotating the display to
+portrait and setting Chromium to auto-launch full-screen on boot,
+depending on your Pi OS version.
+
+Then reboot:
+
+```
+sudo reboot
+```
+
+The Pi should come back up straight into the full-screen display, already
+rotated to portrait.
+
+### 10. Mount it
+
+Physically attach the monitor to the Pi and mount both on the wall.
+You're done — from here on, changes to your calendars show up
+automatically (see "Auto-update behavior" above).
+
+### Managing it later
+
+From your phone, on the same Wi-Fi, open
+`http://wallcaltodo.local:3000/companion` (swap in your own hostname) to
+toggle calendars or disconnect an account — this works fine from your
+phone. **Adding a brand-new account** still has to be done on the Pi's own
+screen, same as step 8 (or via an SSH tunnel — `ssh -L 3000:localhost:3000 pi@wallcaltodo.local`,
+then open `http://localhost:3000/companion` on your laptop through the
+tunnel — if you'd rather not walk over to the Pi).
+
+### Troubleshooting
+
+- **Can't reach `wallcaltodo.local` from your phone** — not every network/
+  device supports `.local` mDNS names. Find the Pi's IP instead: SSH in
+  and run `hostname -I`, then use `http://<that-ip>:3000/companion`.
+- **Backend won't start** — `sudo systemctl status wallcaltodo` and
+  `sudo journalctl -u wallcaltodo -n 50` for the actual error. Usually a
+  missing/wrong value in `server/.env`.
+- **Kiosk screen is blank or shows a desktop instead of the app** — SSH in
+  and run `pi-setup/kiosk/kiosk.sh` by hand to see its output directly,
+  and double check the autostart file syntax in `pi-setup/kiosk/README.md`.
+- **You used a different username than `pi`** — update `User=` and the
+  `/home/pi/...` paths in `pi-setup/wallcaltodo.service` before copying it
+  to `/etc/systemd/system/`.
+
+## Local development
+
+For iterating on the code itself (not installing on the Pi), run each
+piece on your own computer instead:
 
 ```
 cd server && npm install && npm run dev
@@ -127,38 +325,15 @@ cd frontend && npm install && npm run dev
 cd companion && npm install && npm run dev
 ```
 
-The kiosk app is on `http://localhost:5173`, the companion app on whatever
-port Vite picks next (check its terminal output) — both proxy API/WS calls
-to the backend on :3000. To preview the kiosk's portrait layout on a normal
-monitor, just shrink the browser window narrow.
+The kiosk app lands on `http://localhost:5173`, the companion app on
+whatever port Vite picks next (check its terminal output) — both proxy
+`/api`, `/auth`, and `/ws` calls to the backend on `:3000`. Since
+everything's on `localhost` here, the OAuth connect step just works
+directly: open the companion app and use **+ Add Google account**, and
+visit `http://localhost:3000/auth/microsoft` once for Microsoft.
 
-Open the companion app and use its "Add Google account" button (or visit
-`http://localhost:3000/auth/google` directly) to connect one or more
-Google accounts. Visit `http://localhost:3000/auth/microsoft` once to
-connect Microsoft To Do. Do this from a laptop/phone on the same network —
-not something the kiosk display itself needs to do.
-
-### 3. Deploy to the Pi
-
-```
-cd frontend && npm run build       # outputs frontend/dist, served by the backend
-cd companion && npm run build      # outputs companion/dist, served by the backend at /companion
-```
-
-Copy the repo to the Pi (or `git clone` it there), `npm install --omit=dev`
-in `server/`, put a real `.env` in `server/`, then:
-
-```
-sudo cp pi-setup/wallcaltodo.service /etc/systemd/system/
-sudo systemctl enable --now wallcaltodo
-```
-
-Then follow `pi-setup/kiosk/README.md` to rotate the display and autostart
-Chromium in kiosk mode.
-
-From your phone, on the same Wi-Fi, open `http://<pi-hostname>.local:3000/companion`
-(Raspberry Pi OS runs mDNS by default, so the `.local` hostname — e.g.
-`raspberrypi.local` — resolves without needing to know the Pi's IP).
+To preview the kiosk's portrait layout on a normal monitor, just shrink
+the browser window narrow — no special flag needed.
 
 ## Design
 
