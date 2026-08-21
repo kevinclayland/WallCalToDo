@@ -11,7 +11,7 @@ export default function TodoView({ tasks }) {
           {tasks.map((task) => (
             <li key={task.id} className={`todo-list__item${task.completed ? ' is-completed' : ''}`}>
               <span className="todo-list__title">{task.title}</span>
-              {task.due && <span className="todo-list__due">{new Date(task.due).toLocaleDateString()}</span>}
+              {task.due && <span className="todo-list__due">{new Date(task.due).toLocaleDateString('en-US')}</span>}
             </li>
           ))}
         </ul>
