@@ -10,10 +10,22 @@ until curl -sf "$URL/api/status" > /dev/null; do
   sleep 1
 done
 
-xset s off -dpms 2>/dev/null   # X11 only: disable screen blanking
-unclutter -idle 0.5 -root &    # X11 only: hide the mouse cursor, if installed
+xset s off -dpms 2>/dev/null           # X11 only: disable screen blanking
+command -v unclutter > /dev/null && unclutter -idle 0.5 -root &  # X11 only: hide the mouse cursor, if installed
 
-exec chromium-browser \
+# The browser package's binary name varies by Raspberry Pi OS release —
+# older ones ship "chromium-browser", newer ones (Trixie-based) just
+# "chromium". Use whichever actually exists instead of hardcoding one.
+if command -v chromium-browser > /dev/null; then
+  BROWSER=chromium-browser
+elif command -v chromium > /dev/null; then
+  BROWSER=chromium
+else
+  echo "kiosk.sh: no chromium/chromium-browser binary found" >&2
+  exit 1
+fi
+
+exec "$BROWSER" \
   --kiosk \
   --noerrdialogs \
   --disable-infobars \
