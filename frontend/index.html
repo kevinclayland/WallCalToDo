@@ -6,14 +6,18 @@
     <title>WallCalToDo</title>
     <script>
       // Kiosk workaround: on some Pi/Chromium/compositor combinations the
-      // very first paint after boot renders blank white until something
-      // forces a repaint (a manual refresh fixes it every time). Reload
-      // once per browser session, shortly after load, so the kiosk
-      // self-heals without anyone needing to be there to hit refresh.
-      if (!sessionStorage.getItem('wallcaltodo-booted')) {
-        sessionStorage.setItem('wallcaltodo-booted', '1');
-        setTimeout(() => window.location.reload(), 2500);
-      }
+      // page sometimes fails to render at all on load (blank white
+      // screen) — a manual refresh always fixes it, but the exact cause
+      // varies. Rather than guess at it, just check a few seconds after
+      // load whether real content actually showed up; if not, reload.
+      // This runs fresh on every load (no "only once" flag), so it keeps
+      // retrying every few seconds until it actually works.
+      setTimeout(function () {
+        var root = document.getElementById('root');
+        if (!root || root.children.length === 0) {
+          window.location.reload();
+        }
+      }, 3000);
     </script>
   </head>
   <body>
