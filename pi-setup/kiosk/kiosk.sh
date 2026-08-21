@@ -25,8 +25,12 @@ else
   exit 1
 fi
 
+# --password-store=basic skips the system keyring entirely — minimal
+# desktops like labwc don't run/unlock one, so without this flag Chromium
+# pops up a keyring-unlock dialog on every launch.
 exec "$BROWSER" \
   --kiosk \
+  --password-store=basic \
   --noerrdialogs \
   --disable-infobars \
   --disable-session-crashed-bubble \
