@@ -28,8 +28,14 @@ fi
 # --password-store=basic skips the system keyring entirely — minimal
 # desktops like labwc don't run/unlock one, so without this flag Chromium
 # pops up a keyring-unlock dialog on every launch.
+#
+# --incognito guarantees every launch is a genuinely fresh session: no
+# restored tabs/sessionStorage from a previous run, no stale disk cache.
+# A kiosk display that always shows the same one page has no use for
+# persisting any of that between boots anyway.
 exec "$BROWSER" \
   --kiosk \
+  --incognito \
   --password-store=basic \
   --noerrdialogs \
   --disable-infobars \
