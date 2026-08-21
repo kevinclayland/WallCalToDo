@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>WallCalToDo</title>
+    <script>
+      // Kiosk workaround: on some Pi/Chromium/compositor combinations the
+      // very first paint after boot renders blank white until something
+      // forces a repaint (a manual refresh fixes it every time). Reload
+      // once per browser session, shortly after load, so the kiosk
+      // self-heals without anyone needing to be there to hit refresh.
+      if (!sessionStorage.getItem('wallcaltodo-booted')) {
+        sessionStorage.setItem('wallcaltodo-booted', '1');
+        setTimeout(() => window.location.reload(), 2500);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
