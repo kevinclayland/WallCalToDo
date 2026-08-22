@@ -4,20 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>WallCalToDo</title>
+    <style>
+      /* Inline (not in the external stylesheet) so this applies the
+         instant the document parses, before any asset has to load —
+         belt-and-suspenders for the cursor:none in base.css. */
+      * {
+        cursor: none;
+      }
+    </style>
     <script>
       // Kiosk workaround: on some Pi/Chromium/compositor combinations the
-      // page sometimes fails to render at all on load (blank white
-      // screen) — a manual refresh always fixes it, but the exact cause
-      // varies. Rather than guess at it, just check a few seconds after
-      // load whether real content actually showed up; if not, reload.
-      // This runs fresh on every load (no "only once" flag), so it keeps
-      // retrying every few seconds until it actually works.
-      setTimeout(function () {
-        var root = document.getElementById('root');
-        if (!root || root.children.length === 0) {
+      // page sometimes fails to actually display on load — sometimes a
+      // blank white screen, sometimes grey — even though a manual refresh
+      // always fixes it. A DOM-content check ("did #root get children?")
+      // doesn't reliably catch this, since the symptom seems to be the
+      // compositor not flushing a painted frame rather than the page
+      // failing to render at all. Simplest robust fix: just force one
+      // unconditional reload shortly after every load, no detection
+      // involved. The sessionStorage guard keeps it to exactly once per
+      // boot rather than looping — safe because kiosk.sh launches
+      // Chromium with --incognito, so sessionStorage is genuinely fresh
+      // every boot, not carried over from a restored prior session.
+      if (!sessionStorage.getItem('wallcaltodo-booted')) {
+        sessionStorage.setItem('wallcaltodo-booted', '1');
+        setTimeout(function () {
           window.location.reload();
-        }
-      }, 3000);
+        }, 4000);
+      }
     </script>
   </head>
   <body>

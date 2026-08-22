@@ -11,7 +11,14 @@ until curl -sf "$URL/api/status" > /dev/null; do
 done
 
 xset s off -dpms 2>/dev/null           # X11 only: disable screen blanking
-command -v unclutter > /dev/null && unclutter -idle 0.5 -root &  # X11 only: hide the mouse cursor, if installed
+
+# unclutter (X11 only — relies on the XScreenSaver extension, which has
+# no Wayland equivalent, so it's a no-op under labwc/Wayland) hides the
+# cursor here as a belt-and-suspenders measure. The actual cursor hiding
+# that works everywhere, including Wayland, is `cursor: none` baked into
+# the page itself (frontend/index.html + base.css) — that's what does the
+# real work on a Bookworm/Trixie default install.
+command -v unclutter > /dev/null && unclutter -idle 0.5 -root &
 
 # The browser package's binary name varies by Raspberry Pi OS release —
 # older ones ship "chromium-browser", newer ones (Trixie-based) just
