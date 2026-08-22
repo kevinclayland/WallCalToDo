@@ -41,7 +41,9 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  /* Near-edge-to-edge, matching the mock — this is the "fullscreen
+     calendar" section, not a padded card. */
+  padding: var(--space-xs) var(--space-xs) 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -49,7 +51,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--space-sm);
+  margin: 0 var(--space-xs) var(--space-xs);
 }
 
 .calendar-header__date {
@@ -195,8 +197,9 @@ body {
 .agenda,
 .todo {
   min-height: 0;
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-sm) var(--space-sm);
   overflow-y: auto;
+  font-size: var(--font-size-small);
 }
 
 .todo {
@@ -205,8 +208,8 @@ body {
 
 .agenda__heading,
 .todo__heading {
-  font-size: 2rem;
-  margin: 0 0 var(--space-md);
+  font-size: 1.5rem;
+  margin: 0 0 var(--space-sm);
 }
 
 .agenda__list {
@@ -215,27 +218,27 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
 }
 
 .agenda__item {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
 }
 
 .agenda__time {
-  width: 5.5em;
+  width: 4.5em;
   flex-shrink: 0;
   text-align: right;
   color: var(--color-text-muted);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-tiny);
 }
 
 .agenda__pill {
   background: var(--event-color, var(--color-accent));
   color: #fff;
-  padding: 0.4em 1em;
+  padding: 0.3em 0.9em;
   border-radius: 999px;
   font-weight: 600;
 }
@@ -246,25 +249,25 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
 }
 
 .todo-list__item {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
 }
 
 .todo-list__checkbox {
-  width: 1.2em;
-  height: 1.2em;
+  width: 1.1em;
+  height: 1.1em;
   flex-shrink: 0;
   border: 2px solid var(--color-text-muted);
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85em;
+  font-size: 0.8em;
   line-height: 1;
 }
 
