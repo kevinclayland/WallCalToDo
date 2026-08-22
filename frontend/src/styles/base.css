@@ -209,6 +209,8 @@ body {
   padding: var(--space-sm) var(--space-md);
   overflow-y: auto;
   font-size: 1.125rem;
+  /* Softer off-white than the calendar's pure-white text, per the mockup. */
+  color: var(--color-text-agenda);
 }
 
 .todo {
@@ -272,8 +274,8 @@ body {
   width: 1.1em;
   height: 1.1em;
   flex-shrink: 0;
-  border: 2px solid var(--color-text-muted);
-  border-radius: 4px;
+  border: 2px solid var(--color-checkbox);
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -282,9 +284,9 @@ body {
 }
 
 .is-completed .todo-list__checkbox {
-  background: var(--color-text-muted);
-  border-color: var(--color-text-muted);
-  color: var(--color-bg);
+  background: var(--color-checkbox);
+  border-color: var(--color-checkbox);
+  color: #000;
 }
 
 .todo-list__title {

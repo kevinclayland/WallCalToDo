@@ -7,18 +7,25 @@
  * the values below, add new tokens as needed, components don't care.
  */
 :root {
-  --color-bg: #0b0d10;
-  --color-surface: #15181c;
+  /* Exact values below (bg/surface/border/today/online/muted/agenda-text)
+     are taken directly from the Figma mockup SVG, not estimated. */
+  --color-bg: #000000;
+  --color-surface: #101212;
   --color-text: #f5f5f5;
+  /* Softer than pure white — used for the agenda/to-do section body text
+     per the mockup; the calendar's month title and day numbers stay pure
+     white (see .calendar-header, .calendar-cell__day). */
+  --color-text-agenda: #d6e0ea;
   --color-text-muted: #9aa0a6;
   --color-accent: #4f8cff;
-  --color-border: #2a2e33;
+  --color-border: #1b1f1f;
   --color-online: #3ddc84;
-  --color-offline: #ff5252;
+  --color-offline: #ff0000;
   /* Fixed "today" marker color — deliberately independent of any
      calendar's own color, so today always reads the same regardless of
      what's on the schedule. */
-  --color-today: #e5484d;
+  --color-today: #ff0000;
+  --color-checkbox: #49454f;
 
   --font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-size-title: 3rem;
