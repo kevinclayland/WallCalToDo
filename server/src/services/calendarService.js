@@ -13,7 +13,24 @@ const saveSync = (sync) => writeJson(SYNC_FILE, sync);
 
 const cacheKey = (accountId, calendarId) => `${accountId}::${calendarId}`;
 
+// Google Calendar's palette (colorId -> hex) is a small, effectively static
+// set shared across a whole account, not per-calendar — cheap to fetch once
+// per account per poll cycle and cache in memory rather than persisting it.
+const eventColorCache = new Map(); // accountId -> { [colorId]: { background } }
+
+async function getEventColors(calendarApi, accountId) {
+  if (eventColorCache.has(accountId)) return eventColorCache.get(accountId);
+  const { data } = await calendarApi.colors.get();
+  const colors = data.event || {};
+  eventColorCache.set(accountId, colors);
+  return colors;
+}
+
 function normalizeEvent(event, context) {
+  // An event can override its calendar's color (Google Calendar's "change
+  // color of this event" option) via colorId — respect that when set,
+  // otherwise fall back to the calendar's own color.
+  const overrideColor = event.colorId && context.eventColors?.[event.colorId]?.background;
   return {
     id: event.id,
     title: event.summary || '(No title)',
@@ -22,7 +39,7 @@ function normalizeEvent(event, context) {
     allDay: Boolean(event.start?.date && !event.start?.dateTime),
     location: event.location || null,
     calendarLabel: context.calendarLabel,
-    color: context.color,
+    color: overrideColor || context.color,
   };
 }
 
@@ -127,9 +144,16 @@ export async function pollCalendar() {
       continue;
     }
 
+    // Non-fatal: per-event color overrides are a nice-to-have, not worth
+    // skipping this account's whole poll over if the palette fetch fails.
+    const eventColors = await getEventColors(calendarApi, account.id).catch((err) => {
+      console.error(`[calendar] failed to fetch event color palette for ${account.email}:`, err.message);
+      return {};
+    });
+
     for (const cal of account.calendars) {
       const key = cacheKey(account.id, cal.id);
-      const context = { calendarLabel: cal.summary, color: cal.backgroundColor };
+      const context = { calendarLabel: cal.summary, color: cal.backgroundColor, eventColors };
       try {
         const calChanged = await pollOneCalendar(calendarApi, key, cal.id, context, cache, sync);
         changed = changed || calChanged;
