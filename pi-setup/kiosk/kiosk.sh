@@ -5,21 +5,33 @@
 
 URL="${WALLCALTODO_URL:-http://localhost:3000}"
 
+# Boot-time diagnostics: every stage below (and Chromium's own
+# stdout/stderr) gets timestamped into this file, reset on each run. The
+# grey-screen-on-boot bug has survived multiple blind fix attempts
+# (compositor settle delay, --disable-gpu) without actually being seen
+# happen — this log is how the next attempt gets to be evidence-based
+# instead of another guess. After it happens, read it with:
+#   cat ~/wallcaltodo-kiosk.log
+LOG_FILE="$HOME/wallcaltodo-kiosk.log"
+: > "$LOG_FILE"
+log() { echo "$(date -Is) $*" >> "$LOG_FILE"; }
+
+log "kiosk.sh starting (WAYLAND_DISPLAY=$WAYLAND_DISPLAY XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR XDG_SESSION_TYPE=$XDG_SESSION_TYPE)"
+
 # Give the compositor a moment to finish applying the output
 # transform/rotation (wlr-randr, run right before this script in
-# autostart) before a browser window gets created against it. Racing
-# that is the actual cause of the "boots to a grey/blank screen until I
-# manually refresh" symptom: Chromium's first frame gets composited
-# against a not-yet-settled output, and only a real repaint (which a
-# manual refresh forces) ever fixes it — no amount of the page's own JS
-# reloading itself can, since that doesn't force a repaint of a stuck
-# GPU-composited frame.
+# autostart) before a browser window gets created against it — a
+# hypothesis for the "boots to a grey/blank screen until I manually
+# refresh" symptom that has NOT yet been confirmed against the real
+# failure. Kept because it's harmless, not because it's known to help.
 sleep 3
+log "settle delay done"
 
 # Wait for the backend to actually be up before opening the browser.
 until curl -sf "$URL/api/status" > /dev/null; do
   sleep 1
 done
+log "backend ready"
 
 xset s off -dpms 2>/dev/null           # X11 only: disable screen blanking
 
@@ -53,12 +65,15 @@ fi
 # persisting any of that between boots anyway.
 #
 # --disable-gpu forces fully software rendering instead of Chromium's
-# GPU-accelerated compositor. This page has no animation or scrolling
-# that needs GPU accel, and it removes the entire class of bug behind
-# the grey-screen-on-boot symptom: a GPU-composited frame that never
-# gets presented until something forces a repaint (exactly what a
-# manual refresh was doing). Software rendering paints directly, so
-# there's no stuck frame to get stuck in the first place.
+# GPU-accelerated compositor — another unconfirmed hypothesis (a GPU-
+# composited frame stuck unpresented) rather than a verified fix. This
+# page has no animation/scrolling that needs GPU accel, so it's free to
+# keep either way.
+#
+# Chromium's own stdout/stderr goes into the same boot log as the
+# stages above — if it crashes, restarts, or logs a Wayland/GL error,
+# that's the log to check after a grey-screen boot.
+log "launching $BROWSER"
 exec "$BROWSER" \
   --kiosk \
   --incognito \
@@ -69,4 +84,5 @@ exec "$BROWSER" \
   --autoplay-policy=no-user-gesture-required \
   --check-for-update-interval=31536000 \
   --disable-gpu \
-  "$URL"
+  --enable-logging=stderr --v=1 \
+  "$URL" >> "$LOG_FILE" 2>&1
