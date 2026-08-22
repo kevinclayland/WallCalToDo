@@ -6,11 +6,8 @@
 URL="${WALLCALTODO_URL:-http://localhost:3000}"
 
 # Boot-time diagnostics: every stage below (and Chromium's own
-# stdout/stderr) gets timestamped into this file, reset on each run. The
-# grey-screen-on-boot bug has survived multiple blind fix attempts
-# (compositor settle delay, --disable-gpu) without actually being seen
-# happen — this log is how the next attempt gets to be evidence-based
-# instead of another guess. After it happens, read it with:
+# stdout/stderr) gets timestamped into this file, reset on each run.
+# After a boot, read it with:
 #   cat ~/wallcaltodo-kiosk.log
 LOG_FILE="$HOME/wallcaltodo-kiosk.log"
 : > "$LOG_FILE"
@@ -64,17 +61,28 @@ fi
 # A kiosk display that always shows the same one page has no use for
 # persisting any of that between boots anyway.
 #
-# --disable-gpu forces fully software rendering instead of Chromium's
-# GPU-accelerated compositor — another unconfirmed hypothesis (a GPU-
-# composited frame stuck unpresented) rather than a verified fix. This
-# page has no animation/scrolling that needs GPU accel, so it's free to
-# keep either way.
+# --disable-gpu forces fully software rendering. This page has no
+# animation/scrolling that needs GPU accel, so it's free to keep.
 #
-# Chromium's own stdout/stderr goes into the same boot log as the
-# stages above — if it crashes, restarts, or logs a Wayland/GL error,
-# that's the log to check after a grey-screen boot.
+# The flags below (--disable-background-networking through
+# --disable-domain-reliability) turn off Chromium's own phone-home
+# traffic — update checks, GCM registration, optimization-guide model
+# fetches, Privacy Sandbox attestations, affiliation lookups, and so
+# on. A boot log capture showed a wall of this traffic firing in the
+# same few seconds Chromium's network service crashed and had to
+# restart — right as it was loading this page. None of that traffic
+# does anything useful for a kiosk with no user and no browsing, so
+# cutting it lowers memory/CPU contention during the exact startup
+# window that crash happened in, on a Pi 3B with only 1GB of RAM.
+#
+# That crash is the real lead on the grey-screen bug: if it kills the
+# in-flight request for this page's own HTML, the page never loads at
+# all — meaning none of this page's own JS ever runs, which is why
+# every earlier page-JS-based reload attempt could only ever be a
+# no-op. The fix below (the wtype block) works at the OS level
+# instead, for exactly that reason.
 log "launching $BROWSER"
-exec "$BROWSER" \
+"$BROWSER" \
   --kiosk \
   --incognito \
   --password-store=basic \
@@ -84,5 +92,33 @@ exec "$BROWSER" \
   --autoplay-policy=no-user-gesture-required \
   --check-for-update-interval=31536000 \
   --disable-gpu \
-  --enable-logging=stderr --v=1 \
-  "$URL" >> "$LOG_FILE" 2>&1
+  --disable-background-networking \
+  --disable-component-update \
+  --disable-domain-reliability \
+  --disable-sync \
+  --disable-translate \
+  --no-first-run \
+  --enable-logging=stderr --v=0 \
+  "$URL" >> "$LOG_FILE" 2>&1 &
+CHROMIUM_PID=$!
+log "chromium pid=$CHROMIUM_PID"
+
+# Guaranteed recovery for the grey-screen boot: send a real F5 keypress
+# to the compositor a minute after launch — the literal action that has
+# always fixed this by hand. Sent as an actual synthetic input event
+# (not a page-JS reload), it works even in the failure case above where
+# the page never loaded in the first place and has no JS running to do
+# anything. Runs unconditionally, not just on detected failure: a page
+# that's already loaded fine just reloads once, which is a much smaller
+# cost than another silent boot to grey.
+if command -v wtype > /dev/null; then
+  (
+    sleep 60
+    log "sending synthetic F5 refresh via wtype"
+    wtype -k F5
+  ) &
+else
+  log "wtype not installed — skipping synthetic refresh. Install with: sudo apt install wtype"
+fi
+
+wait "$CHROMIUM_PID"
