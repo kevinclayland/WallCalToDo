@@ -15,11 +15,16 @@
   --color-border: #2a2e33;
   --color-online: #3ddc84;
   --color-offline: #ff5252;
+  /* Fixed "today" marker color — deliberately independent of any
+     calendar's own color, so today always reads the same regardless of
+     what's on the schedule. */
+  --color-today: #e5484d;
 
   --font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-size-title: 3rem;
   --font-size-body: 1.5rem;
   --font-size-small: 1rem;
+  --font-size-tiny: 0.8rem;
 
   --space-xs: 0.5rem;
   --space-sm: 1rem;

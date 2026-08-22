@@ -19,51 +19,80 @@ body {
   font-size: var(--font-size-body);
 }
 
-/*
- * Portrait wall display: calendar on top, to-do list on the bottom, both
- * visible at once — no switching. Row sizes are a placeholder split
- * (calendar gets slightly more room); adjust the fractions or make them
- * equal once the real design calls for something specific.
- */
-.app {
-  height: 100%;
-  display: grid;
-  grid-template-rows: 1.1fr 1fr auto;
-}
-
-.view {
-  /* min-height: 0 lets a grid row's content scroll instead of forcing the
-     row to grow past its share of the screen. */
-  min-height: 0;
-  padding: var(--space-md) var(--space-lg) var(--space-lg);
-  overflow-y: auto;
-}
-
-.view--calendar {
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  flex-direction: column;
-}
-
-.view__title {
-  font-size: var(--font-size-title);
-  margin: 0 0 var(--space-sm);
-}
-
 .view__empty {
   color: var(--color-text-muted);
 }
 
 /*
- * Month grid: a header row of weekday labels, then one row per week. The
- * row count is set inline per-component (months have 5 or 6 weeks), so
- * this only needs to define columns.
+ * Top-level layout: calendar section gets a fixed share of the screen
+ * height regardless of month length (the grid below adjusts its own row
+ * heights to fill that fixed space — see .calendar-grid). The bottom
+ * section (today's agenda + to-do) takes the rest.
  */
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 63% 37%;
+}
+
+/* ---------- Calendar section ---------- */
+
+.calendar-section {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-sm);
+}
+
+.calendar-header__date {
+  margin: 0;
+  font-size: var(--font-size-title);
+}
+
+.calendar-header__month {
+  font-weight: 700;
+}
+
+.calendar-header__year {
+  font-weight: 300;
+}
+
+.calendar-header__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3em;
+}
+
+.calendar-header__dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--color-offline);
+}
+
+.calendar-header__dot.is-connected {
+  background: var(--color-online);
+}
+
+.calendar-header__clock {
+  font-size: 1.75rem;
+  color: var(--color-text-muted);
+}
+
 .calendar-grid {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
   background: var(--color-border);
   border: 1px solid var(--color-border);
@@ -95,12 +124,6 @@ body {
   color: var(--color-text-muted);
 }
 
-.calendar-cell--today .calendar-cell__day {
-  color: var(--color-bg);
-  background: var(--color-accent);
-  border-radius: 50%;
-}
-
 .calendar-cell__day {
   font-size: var(--font-size-small);
   width: 1.6em;
@@ -110,7 +133,15 @@ body {
   justify-content: center;
 }
 
+.calendar-cell--today .calendar-cell__day {
+  color: var(--color-text);
+  background: var(--color-today);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
 .calendar-cell__events {
+  flex: 1;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -123,26 +154,90 @@ body {
 
 .calendar-cell__event {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.3em;
   font-size: var(--font-size-small);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
-.calendar-cell__event::before {
-  content: '';
+.calendar-cell__event-dot {
   width: 0.5em;
   height: 0.5em;
   border-radius: 50%;
   background: var(--event-color, var(--color-accent));
   flex-shrink: 0;
+  margin-top: 0.4em;
+}
+
+.calendar-cell__event-title {
+  /* Wrap up to 3 lines, then truncate — matches the design's cap on how
+     much a single event can take over a day cell. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .calendar-cell__more {
+  flex-shrink: 0;
   font-size: var(--font-size-small);
   color: var(--color-text-muted);
+}
+
+/* ---------- Bottom section: today's agenda + to-do ---------- */
+
+.bottom {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 58% 42%;
+}
+
+.agenda,
+.todo {
+  min-height: 0;
+  padding: var(--space-md) var(--space-lg);
+  overflow-y: auto;
+}
+
+.todo {
+  border-left: 1px solid var(--color-border);
+}
+
+.agenda__heading,
+.todo__heading {
+  font-size: 2rem;
+  margin: 0 0 var(--space-md);
+}
+
+.agenda__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.agenda__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.agenda__time {
+  width: 5.5em;
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.agenda__pill {
+  background: var(--event-color, var(--color-accent));
+  color: #fff;
+  padding: 0.4em 1em;
+  border-radius: 999px;
+  font-weight: 600;
 }
 
 .todo-list {
@@ -155,50 +250,40 @@ body {
 }
 
 .todo-list__item {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: var(--space-sm) var(--space-md);
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.todo-list__checkbox {
+  width: 1.2em;
+  height: 1.2em;
+  flex-shrink: 0;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.is-completed .todo-list__checkbox {
+  background: var(--color-text-muted);
+  border-color: var(--color-text-muted);
+  color: var(--color-bg);
 }
 
 .todo-list__title {
-  overflow-wrap: break-word;
+  flex: 1;
 }
 
-.todo-list__item.is-completed {
-  opacity: 0.4;
+.is-completed .todo-list__title {
+  color: var(--color-text-muted);
   text-decoration: line-through;
 }
 
 .todo-list__due {
+  font-size: var(--font-size-tiny);
   color: var(--color-text-muted);
-  font-size: var(--font-size-small);
-}
-
-.status-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-md);
-  font-size: var(--font-size-small);
-  color: var(--color-text-muted);
-}
-
-.status-bar__dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: var(--color-offline);
-}
-
-.status-bar__dot.is-connected {
-  background: var(--color-online);
-}
-
-.status-bar__label {
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
