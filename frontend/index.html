@@ -14,23 +14,29 @@
     </style>
     <script>
       // Kiosk workaround: on some Pi/Chromium/compositor combinations the
-      // page sometimes fails to actually display on load — sometimes a
-      // blank white screen, sometimes grey — even though a manual refresh
-      // always fixes it. A DOM-content check ("did #root get children?")
-      // doesn't reliably catch this, since the symptom seems to be the
-      // compositor not flushing a painted frame rather than the page
-      // failing to render at all. Simplest robust fix: just force one
-      // unconditional reload shortly after every load, no detection
-      // involved. The sessionStorage guard keeps it to exactly once per
-      // boot rather than looping — safe because kiosk.sh launches
-      // Chromium with --incognito, so sessionStorage is genuinely fresh
-      // every boot, not carried over from a restored prior session.
-      if (!sessionStorage.getItem('wallcaltodo-booted')) {
-        sessionStorage.setItem('wallcaltodo-booted', '1');
-        setTimeout(function () {
-          window.location.reload();
-        }, 4000);
-      }
+      // page sometimes fails to actually display on load (blank white or
+      // grey) even though a manual refresh always fixes it. Force a
+      // reload a few times after boot, no detection involved — simplest
+      // thing that reliably recovers regardless of the exact cause.
+      //
+      // This deliberately does NOT use sessionStorage/localStorage to
+      // track retries: a previous version did, and storage access can
+      // throw in some Chromium incognito configurations — if that throws
+      // on the very first line, the whole script dies silently, taking
+      // the reload logic down with it, which is the likely reason that
+      // version never actually fired. The URL query string can't be
+      // blocked this way, so the retry count lives there instead.
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var attempt = parseInt(params.get('boot_retry') || '0', 10);
+        var MAX_ATTEMPTS = 3;
+        if (attempt < MAX_ATTEMPTS) {
+          setTimeout(function () {
+            params.set('boot_retry', String(attempt + 1));
+            location.replace(location.pathname + '?' + params.toString());
+          }, 4000);
+        }
+      })();
     </script>
   </head>
   <body>

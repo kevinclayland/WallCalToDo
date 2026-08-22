@@ -1,6 +1,5 @@
-import { getAccessToken, isAuthorized } from '../auth/microsoftAuth.js';
+import { getAccessToken, graphFetch, isAuthorized, listTodoLists } from '../auth/microsoftAuth.js';
 import { readJson, writeJson } from '../store/fileStore.js';
-import { config } from '../config.js';
 
 const TASKS_CACHE_FILE = 'msTasksCache.json';
 const SYNC_FILE = 'msSync.json';
@@ -11,89 +10,105 @@ const saveTasks = (cache) => writeJson(TASKS_CACHE_FILE, cache);
 const loadSync = () => readJson(SYNC_FILE, {});
 const saveSync = (sync) => writeJson(SYNC_FILE, sync);
 
-function normalizeTask(task) {
+function normalizeTask(task, context) {
   return {
     id: task.id,
     title: task.title,
     completed: task.status === 'completed',
     due: task.dueDateTime?.dateTime || null,
     importance: task.importance || 'normal',
+    listLabel: context.listLabel,
   };
 }
 
-function sorted(cache) {
-  return Object.values(cache).sort((a, b) => {
+function sortTasks(tasks) {
+  return [...tasks].sort((a, b) => {
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
     return (a.due || '').localeCompare(b.due || '');
   });
 }
 
-async function graphFetch(url, accessToken) {
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!res.ok) {
-    const error = new Error(`Graph API error ${res.status}: ${await res.text()}`);
-    error.status = res.status;
-    throw error;
-  }
-  return res.json();
-}
-
-async function resolveListId(accessToken, sync) {
-  if (config.ms.todoListId) return config.ms.todoListId;
-  if (sync.listId) return sync.listId;
-
-  const data = await graphFetch(`${GRAPH_BASE}/me/todo/lists`, accessToken);
-  const lists = data.value || [];
-  const defaultList = lists.find((list) => list.wellknownListName === 'defaultList') || lists[0];
-  if (!defaultList) throw new Error('No Microsoft To Do lists found for this account.');
-
-  sync.listId = defaultList.id;
-  return defaultList.id;
-}
-
-export async function pollTodo() {
-  if (!(await isAuthorized())) return { changed: false, tasks: [] };
-
-  const accessToken = await getAccessToken();
-  const cache = loadTasks();
-  const sync = loadSync();
-  const listId = await resolveListId(accessToken, sync);
+// Mirrors calendarService's pollOneCalendar: full delta query the first
+// time (no stored deltaLink yet), then a cheap incremental one keyed off
+// the delta link Graph handed back last time.
+async function pollOneList(accessToken, listId, entries, context, sync, key) {
   let changed = false;
-
   try {
-    // Delta queries return only tasks that changed since the last poll
-    // (or, on the first run, everything) plus a deltaLink to resume from
-    // next time — same idea as Google's sync token.
-    let url = sync.deltaLink || `${GRAPH_BASE}/me/todo/lists/${listId}/tasks/delta`;
+    let url = sync[key]?.deltaLink || `${GRAPH_BASE}/me/todo/lists/${listId}/tasks/delta`;
     let deltaLink;
-
     do {
       const data = await graphFetch(url, accessToken);
       for (const task of data.value || []) {
         changed = true;
-        if (task['@removed']) delete cache[task.id];
-        else cache[task.id] = normalizeTask(task);
+        if (task['@removed']) delete entries[task.id];
+        else entries[task.id] = normalizeTask(task, context);
       }
       url = data['@odata.nextLink'];
       deltaLink = data['@odata.deltaLink'] || deltaLink;
     } while (url);
-
-    sync.deltaLink = deltaLink || sync.deltaLink;
+    sync[key] = { deltaLink: deltaLink || sync[key]?.deltaLink };
   } catch (err) {
     if (err.status === 410 || err.status === 400) {
-      // Delta token expired/invalid — drop it and resync fresh next poll.
-      sync.deltaLink = null;
-      Object.keys(cache).forEach((id) => delete cache[id]);
+      // Delta link expired or invalid — drop it and fall back to a full resync.
+      Object.keys(entries).forEach((id) => delete entries[id]);
+      sync[key] = {};
+      changed = true;
     } else {
       throw err;
+    }
+  }
+  return changed;
+}
+
+export async function pollTodo() {
+  if (!(await isAuthorized())) return { changed: false, tasks: [] };
+  const lists = listTodoLists();
+  if (lists.length === 0) return { changed: false, tasks: [] };
+
+  const accessToken = await getAccessToken();
+  const cache = loadTasks();
+  const sync = loadSync();
+  let changed = false;
+
+  for (const list of lists) {
+    const key = list.id;
+    const entries = cache[key] || {};
+    cache[key] = entries;
+    const context = { listLabel: list.displayName };
+    try {
+      const listChanged = await pollOneList(accessToken, list.id, entries, context, sync, key);
+      changed = changed || listChanged;
+    } catch (err) {
+      console.error(`[todo] poll failed for list ${list.displayName}:`, err.message);
     }
   }
 
   saveTasks(cache);
   saveSync(sync);
-  return { changed, tasks: sorted(cache) };
+  return { changed, tasks: getCachedTasks() };
 }
 
+// Purges cached tasks/sync state for a list that's no longer returned by
+// Microsoft — mirrors dropAccountCache() in calendarService.
+export function dropListCache(listId) {
+  const cache = loadTasks();
+  const sync = loadSync();
+  delete cache[listId];
+  delete sync[listId];
+  saveTasks(cache);
+  saveSync(sync);
+}
+
+// Only tasks from currently-enabled lists are returned — toggling a list
+// off in the companion app takes effect immediately, without waiting for
+// or triggering a new poll.
 export function getCachedTasks() {
-  return sorted(loadTasks());
+  const cache = loadTasks();
+  const enabledIds = new Set(listTodoLists().filter((list) => list.enabled).map((list) => list.id));
+  const tasks = [];
+  for (const [key, entries] of Object.entries(cache)) {
+    if (!enabledIds.has(key)) continue;
+    tasks.push(...Object.values(entries));
+  }
+  return sortTasks(tasks);
 }

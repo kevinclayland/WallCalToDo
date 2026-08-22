@@ -35,6 +35,12 @@ body {
   color: #6b7280;
 }
 
+.page__header--section {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
 .banner {
   background: #e5e7eb;
   border-radius: 8px;

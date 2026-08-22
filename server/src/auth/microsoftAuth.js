@@ -1,9 +1,11 @@
 import fs from 'fs';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { config } from '../config.js';
-import { dataFilePath } from '../store/fileStore.js';
+import { dataFilePath, readJson, writeJson } from '../store/fileStore.js';
 
 const CACHE_FILE = dataFilePath('msalCache.json');
+const LISTS_FILE = 'msLists.json';
+const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
 // offline_access is required explicitly (MSAL does not add it implicitly)
 // to get back a refresh token we can use for silent renewal.
 const SCOPES = ['Tasks.Read', 'offline_access'];
@@ -48,8 +50,12 @@ export function getAuthUrl() {
   return getClient().getAuthCodeUrl({ scopes: SCOPES, redirectUri: config.ms.redirectUri });
 }
 
-export function exchangeCode(code) {
-  return getClient().acquireTokenByCode({ code, scopes: SCOPES, redirectUri: config.ms.redirectUri });
+export async function exchangeCode(code) {
+  const result = await getClient().acquireTokenByCode({ code, scopes: SCOPES, redirectUri: config.ms.redirectUri });
+  // Populate the list of To Do lists immediately so the companion app has
+  // something to show right after connecting, without a separate step.
+  await refreshTodoLists();
+  return result;
 }
 
 export async function isAuthorized() {
@@ -69,4 +75,49 @@ export async function getAccessToken() {
   }
   const result = await client.acquireTokenSilent({ account: accounts[0], scopes: SCOPES });
   return result.accessToken;
+}
+
+// Thin wrapper shared with todoService.js so both places hit the Graph
+// API the same way instead of each keeping their own copy.
+export async function graphFetch(url, accessToken) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) {
+    const error = new Error(`Graph API error ${res.status}: ${await res.text()}`);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+// [{ id, displayName, enabled }] — what the companion app reads and what
+// todoService.js polls. Mirrors googleAuth's listAccounts()/calendars
+// shape: multiple lists can be enabled at once (e.g. your personal list
+// plus one shared with your wife), not just a single hardcoded default.
+export function listTodoLists() {
+  return readJson(LISTS_FILE, []);
+}
+
+// Re-fetches the account's To Do lists from Graph and merges them with
+// whatever enabled/disabled state the companion app already set — newly
+// discovered lists default to enabled, removed ones are dropped.
+export async function refreshTodoLists() {
+  const accessToken = await getAccessToken();
+  const data = await graphFetch(`${GRAPH_BASE}/me/todo/lists`, accessToken);
+
+  const existing = new Map(listTodoLists().map((list) => [list.id, list]));
+  const lists = (data.value || []).map((item) => ({
+    id: item.id,
+    displayName: item.displayName || item.id,
+    enabled: existing.get(item.id)?.enabled ?? true,
+  }));
+  writeJson(LISTS_FILE, lists);
+  return lists;
+}
+
+export function setTodoListEnabled(listId, enabled) {
+  const lists = listTodoLists();
+  const list = lists.find((l) => l.id === listId);
+  if (!list) throw new Error(`Unknown To Do list: ${listId}`);
+  list.enabled = enabled;
+  writeJson(LISTS_FILE, lists);
 }

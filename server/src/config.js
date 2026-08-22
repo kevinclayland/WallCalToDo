@@ -15,6 +15,5 @@ export const config = {
     clientSecret: process.env.MS_CLIENT_SECRET,
     tenantId: process.env.MS_TENANT_ID || 'common',
     redirectUri: process.env.MS_REDIRECT_URI || 'http://localhost:3000/auth/microsoft/callback',
-    todoListId: process.env.MS_TODO_LIST_ID || null,
   },
 };

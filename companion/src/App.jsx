@@ -15,6 +15,10 @@ export default function App() {
   const [error, setError] = useState(null);
   const [busyAccountId, setBusyAccountId] = useState(null);
 
+  const [todoLists, setTodoLists] = useState([]);
+  const [todoLoading, setTodoLoading] = useState(true);
+  const [todoBusy, setTodoBusy] = useState(false);
+
   const loadAccounts = useCallback(async () => {
     try {
       const data = await api('/accounts');
@@ -27,9 +31,22 @@ export default function App() {
     }
   }, []);
 
+  const loadTodoLists = useCallback(async () => {
+    try {
+      const data = await api('/todo/lists');
+      setTodoLists(data.lists);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTodoLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadAccounts();
-  }, [loadAccounts]);
+    loadTodoLists();
+  }, [loadAccounts, loadTodoLists]);
 
   async function toggleCalendar(accountId, calendarId, enabled) {
     // Optimistic update so the switch feels instant; reconciled by the
@@ -77,6 +94,36 @@ export default function App() {
       setError(err.message);
     } finally {
       setBusyAccountId(null);
+    }
+  }
+
+  async function toggleTodoList(listId, enabled) {
+    // Optimistic update so the switch feels instant; reconciled by the
+    // next loadTodoLists() if the request fails.
+    setTodoLists((prev) => prev.map((list) => (list.id === listId ? { ...list, enabled } : list)));
+    try {
+      await api(`/todo/lists/${encodeURIComponent(listId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled }),
+      });
+    } catch (err) {
+      setError(err.message);
+      loadTodoLists();
+    }
+  }
+
+  // Microsoft doesn't push list changes, so this is how a newly-shared
+  // list (e.g. one your spouse just shared with you) shows up without
+  // waiting for a reconnect.
+  async function refreshTodoLists() {
+    setTodoBusy(true);
+    try {
+      await api('/todo/refresh', { method: 'POST' });
+      await loadTodoLists();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTodoBusy(false);
     }
   }
 
@@ -140,6 +187,49 @@ export default function App() {
 
       <a className="button button--primary add-account" href="/auth/google">
         + Add Google account
+      </a>
+
+      <header className="page__header page__header--section">
+        <h1>Microsoft To Do</h1>
+        <p className="page__subtitle">Choose which lists show up on the display — including ones shared with you.</p>
+      </header>
+
+      {!todoLoading && todoLists.length === 0 && (
+        <p className="banner">
+          No Microsoft account connected yet, or no To Do lists found. Connect one below to get started.
+        </p>
+      )}
+
+      {todoLists.length > 0 && (
+        <section className="account-card">
+          <div className="account-card__header">
+            <div className="account-card__actions">
+              <button className="button button--ghost" disabled={todoBusy} onClick={refreshTodoLists}>
+                Refresh lists
+              </button>
+            </div>
+          </div>
+
+          <ul className="calendar-list">
+            {todoLists.map((list) => (
+              <li key={list.id} className="calendar-row">
+                <span className="calendar-row__label">{list.displayName}</span>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={list.enabled}
+                    onChange={(e) => toggleTodoList(list.id, e.target.checked)}
+                  />
+                  <span className="switch__track" />
+                </label>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <a className="button button--primary add-account" href="/auth/microsoft">
+        + Connect Microsoft account
       </a>
     </div>
   );

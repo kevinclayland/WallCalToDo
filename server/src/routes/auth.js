@@ -2,15 +2,10 @@ import { Router } from 'express';
 import * as googleAuth from '../auth/googleAuth.js';
 import * as microsoftAuth from '../auth/microsoftAuth.js';
 import { pollCalendar } from '../services/calendarService.js';
+import { pollTodo } from '../services/todoService.js';
 import { broadcast } from '../ws/hub.js';
 
 export const authRouter = Router();
-
-function connectedPage(name) {
-  return `<html><body style="font-family:sans-serif;text-align:center;padding:4rem">
-    <h1>${name} connected</h1><p>You can close this tab.</p>
-  </body></html>`;
-}
 
 // These are meant to be visited from a laptop/phone on the same network as
 // the Pi to grant access — the "Add Google Account" button in the
@@ -38,7 +33,12 @@ authRouter.get('/microsoft', async (req, res) => {
 authRouter.get('/microsoft/callback', async (req, res) => {
   try {
     await microsoftAuth.exchangeCode(req.query.code);
-    res.send(connectedPage('Microsoft To Do'));
+    // Pull tasks in immediately rather than waiting for the next poll
+    // interval, then send the browser back to the companion app so the
+    // just-connected lists show up right away — same as the Google flow.
+    const { changed, tasks } = await pollTodo();
+    if (changed) broadcast({ type: 'todo', data: tasks });
+    res.redirect('/companion');
   } catch (err) {
     res.status(500).send(`Microsoft auth failed: ${err.message}`);
   }
