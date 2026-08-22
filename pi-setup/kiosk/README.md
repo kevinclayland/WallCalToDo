@@ -19,11 +19,18 @@ Find your output name with `wlr-randr` (e.g. `HDMI-A-1`), then create/edit
 
 ```
 wlr-randr --output HDMI-A-1 --transform 90
+sleep 2
 /home/pi/WallCalToDo/pi-setup/kiosk/kiosk.sh &
 ```
 
 Use `--transform 270` instead of `90` if the display comes up upside down
 for your particular mounting orientation.
+
+The `sleep 2` matters: launching the browser immediately after rotating
+the output races the compositor's own transform handling and is what
+causes a grey/blank screen on boot that only a manual refresh fixes.
+`kiosk.sh` also waits a few seconds and disables Chromium's GPU
+compositor for the same reason — see the comments in that script.
 
 `xset`/`unclutter` are X11 tools and are no-ops under Wayland (the script
 swallows their errors). Screen blanking under labwc is off by default on

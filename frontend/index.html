@@ -12,32 +12,6 @@
         cursor: none;
       }
     </style>
-    <script>
-      // Kiosk workaround: on some Pi/Chromium/compositor combinations the
-      // page sometimes fails to actually display on load (blank white or
-      // grey) even though a manual refresh always fixes it. Force a
-      // reload a few times after boot, no detection involved — simplest
-      // thing that reliably recovers regardless of the exact cause.
-      //
-      // This deliberately does NOT use sessionStorage/localStorage to
-      // track retries: a previous version did, and storage access can
-      // throw in some Chromium incognito configurations — if that throws
-      // on the very first line, the whole script dies silently, taking
-      // the reload logic down with it, which is the likely reason that
-      // version never actually fired. The URL query string can't be
-      // blocked this way, so the retry count lives there instead.
-      (function () {
-        var params = new URLSearchParams(location.search);
-        var attempt = parseInt(params.get('boot_retry') || '0', 10);
-        var MAX_ATTEMPTS = 3;
-        if (attempt < MAX_ATTEMPTS) {
-          setTimeout(function () {
-            params.set('boot_retry', String(attempt + 1));
-            location.replace(location.pathname + '?' + params.toString());
-          }, 4000);
-        }
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>

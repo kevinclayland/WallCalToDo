@@ -5,6 +5,17 @@
 
 URL="${WALLCALTODO_URL:-http://localhost:3000}"
 
+# Give the compositor a moment to finish applying the output
+# transform/rotation (wlr-randr, run right before this script in
+# autostart) before a browser window gets created against it. Racing
+# that is the actual cause of the "boots to a grey/blank screen until I
+# manually refresh" symptom: Chromium's first frame gets composited
+# against a not-yet-settled output, and only a real repaint (which a
+# manual refresh forces) ever fixes it — no amount of the page's own JS
+# reloading itself can, since that doesn't force a repaint of a stuck
+# GPU-composited frame.
+sleep 3
+
 # Wait for the backend to actually be up before opening the browser.
 until curl -sf "$URL/api/status" > /dev/null; do
   sleep 1
@@ -40,6 +51,14 @@ fi
 # restored tabs/sessionStorage from a previous run, no stale disk cache.
 # A kiosk display that always shows the same one page has no use for
 # persisting any of that between boots anyway.
+#
+# --disable-gpu forces fully software rendering instead of Chromium's
+# GPU-accelerated compositor. This page has no animation or scrolling
+# that needs GPU accel, and it removes the entire class of bug behind
+# the grey-screen-on-boot symptom: a GPU-composited frame that never
+# gets presented until something forces a repaint (exactly what a
+# manual refresh was doing). Software rendering paints directly, so
+# there's no stuck frame to get stuck in the first place.
 exec "$BROWSER" \
   --kiosk \
   --incognito \
@@ -49,4 +68,5 @@ exec "$BROWSER" \
   --disable-session-crashed-bubble \
   --autoplay-policy=no-user-gesture-required \
   --check-for-update-interval=31536000 \
+  --disable-gpu \
   "$URL"
