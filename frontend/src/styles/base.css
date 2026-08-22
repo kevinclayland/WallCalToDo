@@ -99,7 +99,10 @@ body {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
   background: var(--color-border);
-  border: 1px solid var(--color-border);
+  /* Top edge only — no side borders (not in the design), and no bottom
+     border here since .calendar-section's border-bottom is the one line
+     that separates the calendar from the agenda/to-do section below. */
+  border-top: 1px solid var(--color-border);
 }
 
 .calendar-grid__weekday {
