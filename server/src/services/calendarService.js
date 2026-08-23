@@ -26,6 +26,27 @@ async function getEventColors(calendarApi, accountId) {
   return colors;
 }
 
+// True for events that should actually show up: ones the user created, or
+// invites they've explicitly accepted. Declining an invite you didn't
+// organize (Google Calendar's "remove from this calendar" on someone
+// else's event) doesn't delete the event — it just flips your own RSVP to
+// "declined", so the event keeps coming back from events.list() looking
+// unchanged unless this is checked. Same idea for invites still sitting at
+// "needsAction"/"tentative": not a yes, so not shown.
+function isAcceptedByUser(event) {
+  if (event.organizer?.self) return true;
+  if (!event.attendees || event.attendees.length === 0) return true; // no invitees at all — a personal event
+  const self = event.attendees.find((attendee) => attendee.self);
+  return self ? self.responseStatus === 'accepted' : true;
+}
+
+// Shared by fullSync/incrementalSync: cancelled and non-accepted events are
+// both treated as "shouldn't be cached", everything else gets normalized in.
+function upsertEvent(entries, event, context) {
+  if (event.status === 'cancelled' || !isAcceptedByUser(event)) delete entries[event.id];
+  else entries[event.id] = normalizeEvent(event, context);
+}
+
 function normalizeEvent(event, context) {
   // An event can override its calendar's color (Google Calendar's "change
   // color of this event" option) via colorId — respect that when set,
@@ -62,8 +83,7 @@ async function fullSync(calendarApi, calendarId, entries, context) {
       pageToken,
     });
     for (const event of data.items || []) {
-      if (event.status === 'cancelled') delete entries[event.id];
-      else entries[event.id] = normalizeEvent(event, context);
+      upsertEvent(entries, event, context);
     }
     pageToken = data.nextPageToken;
     nextSyncToken = data.nextSyncToken || nextSyncToken;
@@ -89,8 +109,7 @@ async function incrementalSync(calendarApi, calendarId, entries, context, syncTo
     });
     for (const event of data.items || []) {
       changed = true;
-      if (event.status === 'cancelled') delete entries[event.id];
-      else entries[event.id] = normalizeEvent(event, context);
+      upsertEvent(entries, event, context);
     }
     pageToken = data.nextPageToken;
     nextSyncToken = data.nextSyncToken || nextSyncToken;
