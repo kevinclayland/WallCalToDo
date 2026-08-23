@@ -11,7 +11,7 @@ import { WEEKDAYS, addDays, buildMonthGrid, dateKey, formatClock, parseLocalDate
 // hardware, or replace with a runtime-measured fit if it needs to be exact.
 const MAX_VISIBLE_PER_DAY = 3;
 
-const BAR_HEIGHT = 24;
+const BAR_HEIGHT = 28;
 const BAR_GAP = 4;
 
 // A day's inclusive start/end as local Date objects (midnight both ends).

@@ -164,12 +164,13 @@ body {
 /* Shared by per-day event pills (.calendar-cell__event), multi-day
    spanning bars (.calendar-bar), and the day view's own pills
    (.agenda__pill) — same look everywhere: a stroke in the event's own
-   color, no fill, so the pill's background is just whatever's behind it
-   (the day square, or the agenda panel). White text reads reliably
-   against that instead of depending on how light/dark the event color
-   is. Each consumer adds its own sizing/positioning on top. */
+   color with a faint 30%-tinted fill of that same color (so the pill
+   still reads as "this event's color" without fully covering the day
+   square/agenda panel color behind it). White text reads reliably
+   against that regardless of how light/dark the event color is. Each
+   consumer adds its own sizing/positioning on top. */
 .event-pill {
-  background: transparent;
+  background: color-mix(in srgb, var(--event-color, var(--color-accent)) 30%, transparent);
   border: 2px solid var(--event-color, var(--color-accent));
   color: #ffffff;
   font-weight: 600;
@@ -188,8 +189,10 @@ body {
      stacked below it instead of split evenly above and below. */
   display: flex;
   align-items: center;
-  min-height: 24px;
-  padding: 2px 10px;
+  /* +4px (2px top, 2px bottom) over the text's own line-height, so the
+     text sits with a bit more breathing room off the stroke. */
+  min-height: 28px;
+  padding: 4px 10px;
   font-size: 12px;
 }
 
@@ -214,7 +217,9 @@ body {
    inside any one of them, so one continuous bar can cross cell
    boundaries with no seam. */
 .calendar-bar {
-  height: 24px;
+  /* Matches .calendar-cell__event's new 28px (was 24px) so the two pill
+     styles stay the same height. */
+  height: 28px;
   padding: 0 10px;
   font-size: 12px;
   display: flex;
@@ -283,10 +288,11 @@ body {
 
 .agenda__pill {
   /* Same stroke-pill look as the calendar's own event pills (.event-pill
-     supplies the border/transparent-background/white-text/radius) —
-     just sized up to match the day view's larger 22px row text. */
+     supplies the border/tinted-background/white-text/radius) — just
+     sized up to match the day view's larger 22px row text. +2px top and
+     bottom over the plain em-based padding, same as the calendar pills. */
   font-size: 22px;
-  padding: 0.2em 0.7em;
+  padding: calc(0.2em + 2px) 0.7em;
 }
 
 .todo-list {
