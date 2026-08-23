@@ -149,7 +149,7 @@ export default function CalendarView({ events, connected }) {
                     title={event.title}
                     style={{ '--event-color': event.color || 'var(--color-accent)' }}
                   >
-                    {event.title}
+                    <span className="calendar-cell__event-text">{event.title}</span>
                   </li>
                 ))}
               </ul>

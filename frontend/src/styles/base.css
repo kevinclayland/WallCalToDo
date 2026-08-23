@@ -178,8 +178,17 @@ body {
 }
 
 .calendar-cell__event {
+  /* Flex + centered text instead of relying on min-height alone: a block
+     box with min-height only grows *downward* to meet it, so a single
+     short line ends up sitting flush at the top with all the slack
+     stacked below it instead of split evenly above and below. */
+  display: flex;
+  align-items: center;
   min-height: 24px;
   padding: 2px 10px;
+}
+
+.calendar-cell__event-text {
   /* Wrap up to 3 lines, then truncate — matches the design's cap on how
      much a single event can take over a day cell. */
   display: -webkit-box;
