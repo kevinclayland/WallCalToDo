@@ -249,7 +249,9 @@ body {
 
 .agenda__pill {
   background: var(--event-color, var(--color-accent));
-  color: #fff;
+  /* Black instead of white — white read too light against the lighter
+     calendar colors behind it. */
+  color: #000000;
   padding: 0.3em 0.9em;
   border-radius: 999px;
   font-weight: 600;

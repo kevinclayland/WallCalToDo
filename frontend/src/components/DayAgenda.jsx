@@ -1,9 +1,23 @@
+import { useEffect, useState } from 'react';
 import { dateKey, formatClock, ordinalSuffix, parseLocalDate, sortDayEvents } from '../utils/date.js';
 
 // Always shows *today* — this display has no touch input, so there's no
 // way to select a different day, and none is needed.
 export default function DayAgenda({ events }) {
-  const now = new Date();
+  // `now` needs its own clock, not just a value computed at render time:
+  // this component only re-renders when `events` changes, which can be
+  // hours between calendar updates. Without a timer, "today" would stay
+  // frozen at whenever that last render happened — so once midnight
+  // passed with no calendar changes, this kept showing yesterday's
+  // events instead of the (now-empty) actual today. Matches the same
+  // pattern CalendarView already uses for its own clock/today-highlight.
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+
   const todayKey = dateKey(now);
   const todayEvents = sortDayEvents(events.filter((event) => dateKey(parseLocalDate(event.start)) === todayKey));
 
