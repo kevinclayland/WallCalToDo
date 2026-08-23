@@ -161,13 +161,17 @@ body {
   overflow: hidden;
 }
 
-/* Shared by both per-day event pills (.calendar-cell__event) and
-   multi-day spanning bars (.calendar-bar) — same pill look either way,
-   each adds its own sizing/positioning on top. */
+/* Shared by per-day event pills (.calendar-cell__event), multi-day
+   spanning bars (.calendar-bar), and the day view's own pills
+   (.agenda__pill) — same look everywhere: a stroke in the event's own
+   color, no fill, so the pill's background is just whatever's behind it
+   (the day square, or the agenda panel). White text reads reliably
+   against that instead of depending on how light/dark the event color
+   is. Each consumer adds its own sizing/positioning on top. */
 .event-pill {
-  background: var(--event-color, var(--color-accent));
-  color: #000000;
-  font-size: 12px;
+  background: transparent;
+  border: 2px solid var(--event-color, var(--color-accent));
+  color: #ffffff;
   font-weight: 600;
   line-height: 1.3;
   /* An absolute radius (not a %/stadium shape) so it stays exactly 15px
@@ -186,6 +190,7 @@ body {
   align-items: center;
   min-height: 24px;
   padding: 2px 10px;
+  font-size: 12px;
 }
 
 .calendar-cell__event-text {
@@ -211,6 +216,7 @@ body {
 .calendar-bar {
   height: 24px;
   padding: 0 10px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   align-self: start;
@@ -276,15 +282,11 @@ body {
 }
 
 .agenda__pill {
-  background: var(--event-color, var(--color-accent));
-  /* Black instead of white — white read too light against the lighter
-     calendar colors behind it. Deliberately smaller than the 22px agenda
-     row text around it, matching the calendar's own event pills. */
-  color: #000000;
-  font-size: 12px;
-  padding: 0.3em 0.9em;
-  border-radius: 999px;
-  font-weight: 600;
+  /* Same stroke-pill look as the calendar's own event pills (.event-pill
+     supplies the border/transparent-background/white-text/radius) —
+     just sized up to match the day view's larger 22px row text. */
+  font-size: 22px;
+  padding: 0.2em 0.7em;
 }
 
 .todo-list {

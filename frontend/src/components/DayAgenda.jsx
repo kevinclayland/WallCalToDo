@@ -33,7 +33,7 @@ export default function DayAgenda({ events }) {
           {todayEvents.map((event) => (
             <li key={event.id} className="agenda__item">
               <span className="agenda__time">{event.allDay ? 'All day' : formatClock(new Date(event.start))}</span>
-              <span className="agenda__pill" style={{ '--event-color': event.color || 'var(--color-accent)' }}>
+              <span className="event-pill agenda__pill" style={{ '--event-color': event.color || 'var(--color-accent)' }}>
                 {event.title}
               </span>
             </li>
