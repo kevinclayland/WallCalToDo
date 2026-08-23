@@ -5,6 +5,11 @@ import { readJson, writeJson } from '../store/fileStore.js';
 const EVENTS_CACHE_FILE = 'googleEventsCache.json';
 const SYNC_FILE = 'googleSync.json';
 const FULL_SYNC_WINDOW_DAYS = 90;
+// How far back a full sync looks, so it also re-verifies (and can prune)
+// events on days the month grid still displays as part of the current
+// month — up to a full month back comfortably covers that regardless of
+// where in the month "today" currently falls.
+const FULL_SYNC_LOOKBACK_DAYS = 35;
 
 const loadEvents = () => readJson(EVENTS_CACHE_FILE, {});
 const saveEvents = (cache) => writeJson(EVENTS_CACHE_FILE, cache);
@@ -64,13 +69,15 @@ function normalizeEvent(event, context) {
   };
 }
 
-// Full listing, seeded from "now" out to FULL_SYNC_WINDOW_DAYS. The final
-// page's nextSyncToken becomes our handle for cheap incremental polls.
+// Full listing, seeded from FULL_SYNC_LOOKBACK_DAYS in the past out to
+// FULL_SYNC_WINDOW_DAYS ahead. The final page's nextSyncToken becomes our
+// handle for cheap incremental polls.
 async function fullSync(calendarApi, calendarId, entries, context) {
-  const timeMin = new Date().toISOString();
+  const timeMin = new Date(Date.now() - FULL_SYNC_LOOKBACK_DAYS * 86400000).toISOString();
   const timeMax = new Date(Date.now() + FULL_SYNC_WINDOW_DAYS * 86400000).toISOString();
   let pageToken;
   let nextSyncToken = null;
+  const seenIds = new Set();
 
   do {
     const { data } = await calendarApi.events.list({
@@ -83,11 +90,25 @@ async function fullSync(calendarApi, calendarId, entries, context) {
       pageToken,
     });
     for (const event of data.items || []) {
+      seenIds.add(event.id);
       upsertEvent(entries, event, context);
     }
     pageToken = data.nextPageToken;
     nextSyncToken = data.nextSyncToken || nextSyncToken;
   } while (pageToken);
+
+  // Unlike an incremental sync, a plain listing like this one doesn't ask
+  // for (or return) cancelled events — it just silently omits them instead
+  // of flagging them, so a genuine deletion can't be detected the same
+  // way. Anything already cached inside this window that didn't come back
+  // in this fresh listing is gone (deleted, or no longer accessible) and
+  // needs pruning explicitly.
+  const minTime = new Date(timeMin).getTime();
+  const maxTime = new Date(timeMax).getTime();
+  for (const [id, cached] of Object.entries(entries)) {
+    const startTime = new Date(cached.start).getTime();
+    if (startTime >= minTime && startTime <= maxTime && !seenIds.has(id)) delete entries[id];
+  }
 
   return nextSyncToken;
 }
