@@ -27,12 +27,14 @@ body {
  * Top-level layout: calendar section gets a fixed share of the screen
  * height regardless of month length (the grid below adjusts its own row
  * heights to fill that fixed space — see .calendar-grid). The bottom
- * section (today's agenda + to-do) takes the rest.
+ * section (today's agenda + to-do) takes the rest. Fixed px (not %) —
+ * pinned to the kiosk's actual 1920px-tall screen, not a proportional
+ * split, per the exact 1520/400 split chosen in the design canvas.
  */
 .app {
   height: 100%;
   display: grid;
-  grid-template-rows: 63% 37%;
+  grid-template-rows: 1520px 400px;
 }
 
 /* ---------- Calendar section ---------- */
