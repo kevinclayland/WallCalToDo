@@ -181,6 +181,14 @@ export default function CalendarView({ events, connected }) {
               // "flows into the next row" rather than "event ends here".
               borderLeftWidth: isStart ? 2 : 0,
               borderRightWidth: isEnd ? 2 : 0,
+              // A real start's text sits at marginLeft (--space-xs) +
+              // border (2px) + the bar's own 10px padding = 20px in from
+              // the column edge — the same inset a per-day event pill's
+              // text has (cell padding 8px + its own border 2px + pill
+              // padding 10px). A cut-off left edge has neither that margin
+              // nor that border, so its padding needs to make up the same
+              // 18px on its own to keep both lined up.
+              paddingLeft: isStart ? undefined : 'calc(var(--space-xs) + 12px)',
               '--event-color': event.color || 'var(--color-accent)',
             }}
           >
