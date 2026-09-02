@@ -27,7 +27,14 @@
   --color-today: #ff0000;
   --color-checkbox: #49454f;
 
-  --font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* The emoji names at the end are deliberate, not decorative: an event
+     title with an emoji in it (from Google Calendar) falls through to
+     whichever of these is actually installed for that glyph — 'Noto
+     Color Emoji' on the Pi (see pi-setup/kiosk/README.md), 'Apple Color
+     Emoji' / 'Segoe UI Emoji' on a dev machine. Without one of these
+     present here, Chromium has no color-emoji font to fall back to and
+     renders the character as a blank/box glyph ("tofu") instead. */
+  --font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
   --font-size-title: 3rem;
   --font-size-body: 1.5rem;
   --font-size-small: 1rem;
