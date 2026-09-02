@@ -4,6 +4,12 @@ A wall-mounted display (old monitor, portrait orientation, + Raspberry Pi)
 that shows a Google Calendar and a Microsoft To Do list at the same time —
 calendar on top, to-do list on the bottom.
 
+![WallCalToDo showing a busy month — colored event pills, multi-day event bars, and a mixed to-do list](docs/screenshot.png)
+
+*(Demo data, not a real calendar — shown here with a lot going on to
+demonstrate multi-day events, the "+N more" overflow on a busy day, and a
+mix of completed/pending to-do items with due dates.)*
+
 ## Why this exists
 
 The point of this project isn't a new to-do app — it's to get a wall
@@ -52,9 +58,10 @@ Microsoft Graph API               ─┘                                        
   settings API the companion app uses. Serves both built frontends too, so
   the Pi only runs one process in production.
 - **frontend/** — React kiosk app that renders both views stacked in a
-  single screen (calendar top, to-do bottom). All colors/spacing/type come
-  from `frontend/src/styles/tokens.css` so the real design can drop in
-  later without touching component logic.
+  single screen (calendar top, to-do bottom). Base colors/spacing/type
+  scale live in `frontend/src/styles/tokens.css`; the actual visual design
+  (event pill styling, the calendar grid, multi-day event bars, etc.) is
+  in `frontend/src/styles/base.css` and the component files themselves.
 - **companion/** — React settings app for your phone: connect/disconnect
   Google accounts and toggle individual calendars on or off. Reachable at
   `http://<pi-hostname>:3000/companion` over your home Wi-Fi — see
@@ -87,12 +94,15 @@ infrastructure.
 
 ## Portrait orientation
 
-The layout (`frontend/src/styles/base.css`) is a simple CSS grid: calendar
-takes the top ~55% of the screen, the to-do list the bottom ~45%, with a
-divider between them. This works regardless of the monitor's physical
-rotation — the *browser* just needs to think of the screen as portrait
-(narrow width, tall height), which means the Pi's display output itself
-needs to be rotated to match how the monitor is physically mounted.
+The layout (`frontend/src/styles/base.css`, `.app`) is a simple CSS grid:
+calendar takes the top 1520px, the to-do/agenda section the bottom 400px —
+fixed pixel values, not a percentage split, sized for the display's actual
+1080×1920 portrait resolution. This works regardless of the monitor's
+physical rotation — the *browser* just needs to think of the screen as
+portrait (narrow width, tall height), which means the Pi's display output
+itself needs to be rotated to match how the monitor is physically mounted.
+If your display isn't 1080×1920, adjust those two values (and the kiosk
+viewport) to match.
 
 Rotate the display at the OS level, not in the browser:
 
@@ -362,9 +372,11 @@ cd companion && npm install && npm run dev
 
 The kiosk app lands on `http://localhost:5173`, the companion app on
 whatever port Vite picks next (check its terminal output) — both proxy
-`/api`, `/auth`, and `/ws` calls to the backend on `:3000`. Since
-everything's on `localhost` here, the OAuth connect step just works
-directly: open the companion app and use **+ Add Google account**, and
+`/api` and `/auth` calls to the backend on `:3000` (the kiosk app also
+proxies `/ws`, since it's the one that needs the live WebSocket push; the
+companion app doesn't use it). Since everything's on `localhost` here, the
+OAuth connect step just works directly: open the companion app and use
+**+ Add Google account**, and
 visit `http://localhost:3000/auth/microsoft` once for Microsoft.
 
 To preview the kiosk's portrait layout on a normal monitor, just shrink
@@ -372,9 +384,14 @@ the browser window narrow — no special flag needed.
 
 ## Design
 
-This repo intentionally ships with placeholder UI only
-(`frontend/src/styles/tokens.css` + minimal component markup) — the real
-visual design is being done separately as a portfolio piece. Swapping in
-the final design should only mean editing `tokens.css` and the component
-markup/styles; the data layer (OAuth, polling, WebSocket push) doesn't
-need to change.
+The visual design lives directly in this repo now — `frontend/src/styles/
+tokens.css` for the base color/spacing/type scale, `frontend/src/styles/
+base.css` and the component files (`CalendarView.jsx`, `DayAgenda.jsx`,
+`TodoView.jsx`) for the actual layout and styling. It's been iterated on
+in place rather than built separately and dropped in: the calendar grid,
+event pill styling (a stroke in the event's own color over a tinted
+background, not a solid fill), multi-day event bars, and the fixed
+1520px/400px section split were all designed and shipped this way. The
+data layer (OAuth, polling, WebSocket push) is unaffected by any of it —
+styling changes stay confined to the two style files and component
+markup.

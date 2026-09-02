@@ -1,10 +1,9 @@
 /*
- * Placeholder design tokens.
+ * Base design tokens — the color palette and spacing/type scale.
  *
- * Every component reads colors/spacing/type from these CSS custom
- * properties instead of hardcoding values. When the real design is ready,
- * this file (and only this file, ideally) should need to change — swap
- * the values below, add new tokens as needed, components don't care.
+ * Component-specific styling (event pill treatment, the calendar grid,
+ * exact layout dimensions) lives in base.css and the components
+ * themselves; this file is just the shared values they're built from.
  */
 :root {
   /* Exact values below (bg/surface/border/today/online/muted/agenda-text)
