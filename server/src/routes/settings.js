@@ -5,7 +5,7 @@ import { broadcast } from '../ws/hub.js';
 
 export const settingsRouter = Router();
 
-const OFFSET_MINUTES = [15, 30, 45, 60, 120, 180];
+const OFFSET_MINUTES = [0, 15, 30, 45, 60, 120, 180];
 
 function isValidOffset(offset) {
   return (

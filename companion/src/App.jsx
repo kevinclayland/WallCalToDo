@@ -33,6 +33,7 @@ const THEME_OPTIONS = [
 ];
 
 const OFFSET_MINUTES_OPTIONS = [
+  { value: 0, label: '0 min' },
   { value: 15, label: '15 min' },
   { value: 30, label: '30 min' },
   { value: 45, label: '45 min' },
@@ -104,6 +105,9 @@ export default function App() {
   const [placeResults, setPlaceResults] = useState([]);
   const [placeSearching, setPlaceSearching] = useState(false);
   const [placeError, setPlaceError] = useState(null);
+  // Purely a local show/hide for the Sunrise/Sunset offset controls, not a
+  // saved setting itself -- doesn't need to persist across visits.
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -317,8 +321,11 @@ export default function App() {
         <h1>WallCalToDo</h1>
       </header>
 
+      <header className="page__header page__header--sub">
+        <h1>General settings</h1>
+      </header>
+
       <section className="settings-card">
-        <h2 className="settings-card__heading">General settings</h2>
         <div className="segmented" role="group" aria-label="Theme">
           {THEME_OPTIONS.map(({ value, label }) => (
             <button
@@ -343,29 +350,6 @@ export default function App() {
               <p className="location-settings__current">
                 Currently set to{' '}
                 <strong>{settings.location.label || `${settings.location.lat.toFixed(2)}, ${settings.location.lon.toFixed(2)}`}</strong>
-              </p>
-            )}
-            {settings.location && settings.sunrise && settings.sunset && (
-              <div className="sun-offsets">
-                <SunOffsetRow
-                  title="Sunrise"
-                  time={settings.sunrise}
-                  offset={settings.sunriseOffset}
-                  disabled={settingsLoading}
-                  onChange={(offset) => setOffset('sunriseOffset', offset)}
-                />
-                <SunOffsetRow
-                  title="Sunset"
-                  time={settings.sunset}
-                  offset={settings.sunsetOffset}
-                  disabled={settingsLoading}
-                  onChange={(offset) => setOffset('sunsetOffset', offset)}
-                />
-              </div>
-            )}
-            {settings.location && (!settings.sunrise || !settings.sunset) && (
-              <p className="location-settings__times">
-                The sun doesn't rise or set today at this location — staying on dark.
               </p>
             )}
 
@@ -410,11 +394,44 @@ export default function App() {
                 Use my location instead
               </button>
             )}
+
+            {settings.location && (!settings.sunrise || !settings.sunset) && (
+              <p className="location-settings__times">
+                The sun doesn't rise or set today at this location — staying on dark.
+              </p>
+            )}
+
+            <div className="advanced-toggle">
+              <span className="advanced-toggle__label">Advanced</span>
+              <label className="switch">
+                <input type="checkbox" checked={showAdvanced} onChange={(e) => setShowAdvanced(e.target.checked)} />
+                <span className="switch__track" />
+              </label>
+            </div>
+
+            {showAdvanced && settings.location && settings.sunrise && settings.sunset && (
+              <div className="sun-offsets">
+                <SunOffsetRow
+                  title="Sunrise"
+                  time={settings.sunrise}
+                  offset={settings.sunriseOffset}
+                  disabled={settingsLoading}
+                  onChange={(offset) => setOffset('sunriseOffset', offset)}
+                />
+                <SunOffsetRow
+                  title="Sunset"
+                  time={settings.sunset}
+                  offset={settings.sunsetOffset}
+                  disabled={settingsLoading}
+                  onChange={(offset) => setOffset('sunsetOffset', offset)}
+                />
+              </div>
+            )}
           </div>
         )}
       </section>
 
-      <header className="page__header">
+      <header className="page__header page__header--sub">
         <h1>Google Calendar</h1>
         <p className="page__subtitle">Manage which Google calendars show up on the display.</p>
       </header>
@@ -481,7 +498,7 @@ export default function App() {
         </p>
       )}
 
-      <header className="page__header page__header--section">
+      <header className="page__header page__header--section page__header--sub">
         <h1>Microsoft To Do Reminders</h1>
         <p className="page__subtitle">Choose which lists show up on the display — including ones shared with you.</p>
       </header>

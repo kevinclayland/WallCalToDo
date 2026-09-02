@@ -4,15 +4,14 @@ import { getSunTimes } from './sunService.js';
 const SETTINGS_FILE = 'settings.json';
 // 'dark' matches the only look this project has ever shipped with, so a
 // fresh install (or one from before this setting existed) doesn't change
-// anything until someone actually opens the toggle. The offsets default to
-// the smallest step in the companion app's dropdown (15 min, After) rather
-// than "no offset" -- there's no "none" option in that list, so this is the
-// closest thing to a neutral starting point.
+// anything until someone actually opens the toggle. Offsets default to 0
+// (switch exactly at the real sunrise/sunset) until someone opens Advanced
+// and picks something else.
 const DEFAULT_SETTINGS = {
   theme: 'dark',
   location: null,
-  sunriseOffset: { minutes: 15, direction: 'after' },
-  sunsetOffset: { minutes: 15, direction: 'after' },
+  sunriseOffset: { minutes: 0, direction: 'after' },
+  sunsetOffset: { minutes: 0, direction: 'after' },
 };
 
 function loadSettings() {

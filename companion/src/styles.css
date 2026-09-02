@@ -30,6 +30,13 @@ body {
   font-size: 1.5rem;
 }
 
+/* Section-level headers (General settings, Google Calendar, Microsoft To
+   Do Reminders) — smaller than the main "WallCalToDo" title above, all
+   three sized and weighted the same as each other. */
+.page__header--sub h1 {
+  font-size: 1rem;
+}
+
 .page__subtitle {
   margin: 0 0 1.5rem;
   color: #6b7280;
@@ -223,11 +230,6 @@ body {
   margin-bottom: 1.5rem;
 }
 
-.settings-card__heading {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-}
-
 .segmented {
   display: flex;
   background: #f0f1f3;
@@ -377,4 +379,18 @@ body {
 .location-settings__geo {
   display: block;
   margin-top: 0.75rem;
+}
+
+.advanced-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f1f3;
+}
+
+.advanced-toggle__label {
+  font-weight: 600;
+  font-size: 0.9rem;
 }
