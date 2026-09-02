@@ -175,6 +175,12 @@ export default function CalendarView({ events, connected }) {
               borderBottomLeftRadius: isStart ? 15 : 0,
               borderTopRightRadius: isEnd ? 15 : 0,
               borderBottomRightRadius: isEnd ? 15 : 0,
+              // A cut-off edge (the event continues onto the next/previous
+              // week row, not its real start/end) drops its stroke entirely
+              // instead of drawing a line at the screen edge — reads as
+              // "flows into the next row" rather than "event ends here".
+              borderLeftWidth: isStart ? 2 : 0,
+              borderRightWidth: isEnd ? 2 : 0,
               '--event-color': event.color || 'var(--color-accent)',
             }}
           >
