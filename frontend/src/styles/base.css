@@ -118,7 +118,7 @@ body {
 }
 
 .calendar-cell {
-  background: var(--color-surface);
+  background: var(--color-cell);
   padding: var(--space-xs);
   min-width: 0;
   min-height: 0;
@@ -129,7 +129,7 @@ body {
 }
 
 .calendar-cell--outside {
-  background: var(--color-bg);
+  background: var(--color-cell-outside);
   color: var(--color-text-muted);
 }
 
@@ -143,9 +143,9 @@ body {
 }
 
 .calendar-cell--today .calendar-cell__day {
-  /* Black instead of the usual near-white body text — reads better
-     against the red marker circle than white does. */
-  color: #000000;
+  /* Fixed white regardless of theme — reads reliably against the red
+     marker circle either way, unlike the theme's own body text color. */
+  color: #ffffff;
   background: var(--color-today);
   border-radius: 50%;
   font-weight: 700;
