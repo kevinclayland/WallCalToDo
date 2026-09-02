@@ -18,12 +18,24 @@ So instead of inventing its own data model, WallCalToDo reads straight from
 the same accounts my phone already syncs against — the Google Calendar API
 and the Microsoft Graph To Do API — rather than iCloud. Anything I add,
 check off, or move on my phone shows up on the wall, and vice versa,
-because it's the exact same underlying data, not a copy of it. The only
-one-time cost is connecting a Google account in the iOS Mail/Calendar
-settings and a Microsoft account in Reminders' account settings if you
-haven't already — after that, nothing about how you actually use your
-phone changes. The wall display is just another window onto accounts
-you're already keeping up with.
+because it's the exact same underlying data, not a copy of it.
+
+Reminders specifically needed Microsoft, not Google: the iOS Reminders app
+only syncs with accounts that support the underlying task-sync protocol —
+iCloud natively, and Microsoft via Exchange. Google was never an option
+there; adding a Google account in iOS only exposes Mail, Contacts,
+Calendars, and Notes, with no Reminders toggle at all. So Microsoft ended
+up being the practical alternative to iCloud for this. I linked my
+Microsoft account in Reminders' account settings, set it as the default
+account for new reminders, and moved my actual to-do list over to it — so
+Reminders on my phone and the to-do side of this wall display are now
+reading the same Microsoft-backed list.
+
+The only one-time cost is connecting a Google account in the iOS
+Mail/Calendar settings and a Microsoft account in Reminders' account
+settings if you haven't already — after that, nothing about how you
+actually use your phone changes. The wall display is just another window
+onto accounts you're already keeping up with.
 
 ## How it works
 
