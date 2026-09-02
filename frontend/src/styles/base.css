@@ -27,14 +27,16 @@ body {
  * Top-level layout: calendar section gets a fixed share of the screen
  * height regardless of month length (the grid below adjusts its own row
  * heights to fill that fixed space — see .calendar-grid). The bottom
- * section (today's agenda + to-do) takes the rest. Fixed px (not %) —
- * pinned to the kiosk's actual 1920px-tall screen, not a proportional
- * split, per the exact 1520/400 split chosen in the design canvas.
+ * section (today's agenda + to-do) takes the rest. 19fr/5fr is the exact
+ * ratio of the 1520px/400px split chosen in the design canvas (both
+ * divisible by 80) expressed proportionally instead of in fixed pixels —
+ * same split on any screen height, not just the one it was designed
+ * against, which matters once this runs on someone else's monitor.
  */
 .app {
   height: 100%;
   display: grid;
-  grid-template-rows: 1520px 400px;
+  grid-template-rows: 19fr 5fr;
 }
 
 /* ---------- Calendar section ---------- */
@@ -193,6 +195,13 @@ body {
      stacked below it instead of split evenly above and below. */
   display: flex;
   align-items: center;
+  /* This is itself a flex item of .calendar-cell__events (a column flex
+     container) — without this, Chromium's flex algorithm can shrink it
+     below what its own -webkit-line-clamp'd text actually needs (its
+     min-content size isn't computed correctly for line-clamped content),
+     silently overflowing the pill's own box instead of the list clipping
+     a whole pill via overflow:hidden the way it's supposed to. */
+  flex-shrink: 0;
   /* +4px (2px top, 2px bottom) over the text's own line-height, so the
      text sits with a bit more breathing room off the stroke. */
   min-height: 28px;

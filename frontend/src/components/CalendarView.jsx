@@ -1,18 +1,119 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { WEEKDAYS, addDays, buildMonthGrid, dateKey, formatClock, parseLocalDate, sortDayEvents } from '../utils/date.js';
 
 // Placeholder presentation only — swap this markup/styling for the real
 // design later. Data shape stays the same: [{ id, title, start, end, allDay, location, calendarLabel, color }]
 
-// A fixed cap is an approximation — how many events actually fit depends
-// on the real viewport size and how many wrap to multiple lines, which we
-// can't know at build time. 3 is conservative enough to reliably avoid
-// silently clipping a partial event; tune this once viewed on real
-// hardware, or replace with a runtime-measured fit if it needs to be exact.
-const MAX_VISIBLE_PER_DAY = 3;
-
 const BAR_HEIGHT = 28;
 const BAR_GAP = 4;
+// Matches .calendar-cell__events' own `gap` in base.css — DayCell's fit
+// calculation below needs the same number to sum real rendered pill
+// heights correctly.
+const EVENT_GAP = 4;
+// Not a real cap on how many can be *shown* (DayCell measures that per
+// cell, against the real rendered height, so it's correct on any screen
+// size and for any month length) — just a defensive ceiling on how many
+// get rendered at all, for the pathological case of a day with dozens of
+// events.
+const MEASURE_CAP = 12;
+
+// One calendar day cell. Renders every one of today's events up front and
+// measures, via ref, how many actually fit in the real available height
+// (the cell's own — which depends on the screen's actual size and how
+// many week rows this month has, neither knowable ahead of time) before
+// the browser paints, then re-renders trimmed to that count — so "+N more"
+// only ever appears when N events truly don't fit, not because of a flat
+// guessed limit. Re-measures whenever this day's event list changes; a
+// month change also naturally re-measures every cell, since each one is
+// keyed by date and get a fresh mount with the new month's row heights.
+function DayCell({ date, inMonth, isToday, dayEvents, barsSpace, gridRow, gridColumn }) {
+  const cappedEvents = dayEvents.slice(0, MEASURE_CAP);
+  const listRef = useRef(null);
+  // Starts optimistic (all of them) — the effect below measures and trims
+  // this before the browser ever paints, so there's no flash of
+  // too-many-events. CalendarView gives this component a key that includes
+  // this day's event IDs and its barsSpace (see the cells.map() below), so
+  // whenever either changes this remounts — a clean fresh mount is what
+  // resets this back to "show everything" so the effect can measure
+  // against the complete set again, rather than only ever re-checking
+  // whatever a previous measurement already trimmed down to.
+  const [visibleCount, setVisibleCount] = useState(cappedEvents.length);
+
+  useLayoutEffect(() => {
+    const ul = listRef.current;
+    if (!ul) return;
+
+    function fitCount(available) {
+      let used = 0;
+      let count = 0;
+      for (const child of ul.children) {
+        const height = child.getBoundingClientRect().height;
+        const next = used + height + (count > 0 ? EVENT_GAP : 0);
+        if (next > available) break;
+        used = next;
+        count++;
+      }
+      return count;
+    }
+
+    let count = fitCount(ul.clientHeight);
+
+    if (count < cappedEvents.length) {
+      // Everything didn't fit, so a "+N more" badge is about to appear —
+      // but it's a sibling of this list in the same flex column
+      // (.calendar-cell), so it eats into the list's own share of the
+      // cell's height once it's there. The count above was measured
+      // against the taller "no badge yet" height, which can overstate
+      // what actually fits (e.g. a 3rd pill "fits" the full cell but
+      // not the cell-minus-badge). Insert a real (invisible) badge and
+      // re-measure against the space it actually leaves, rather than
+      // guess its height — cheap, and exactly right for any theme/font.
+      const cell = ul.parentElement;
+      const probe = document.createElement('span');
+      probe.className = 'calendar-cell__more';
+      probe.textContent = '+1 more';
+      probe.style.visibility = 'hidden';
+      cell.appendChild(probe);
+      count = fitCount(ul.clientHeight);
+      cell.removeChild(probe);
+    }
+
+    setVisibleCount(count);
+    // Runs once per mount, which is exactly when a (re-)measure is needed
+    // — see the key comment above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const visibleEvents = cappedEvents.slice(0, visibleCount);
+  const hiddenCount = dayEvents.length - visibleEvents.length;
+
+  return (
+    <div
+      className={['calendar-cell', inMonth ? '' : 'calendar-cell--outside', isToday ? 'calendar-cell--today' : '']
+        .filter(Boolean)
+        .join(' ')}
+      style={{ gridRow, gridColumn }}
+    >
+      <span className="calendar-cell__day">{date.getDate()}</span>
+      <ul className="calendar-cell__events" ref={listRef} style={barsSpace > 0 ? { marginTop: barsSpace } : undefined}>
+        {visibleEvents.map((event) => (
+          <li
+            key={event.id}
+            className="event-pill calendar-cell__event"
+            title={event.title}
+            style={{ '--event-color': event.color || 'var(--color-accent)' }}
+          >
+            <span className="calendar-cell__event-text">{event.title}</span>
+          </li>
+        ))}
+      </ul>
+      {/* Pinned outside the (overflow-clipped) events list so it's always
+          fully visible — if space is tight, an event's text gets clipped
+          before this ever would. */}
+      {hiddenCount > 0 && <span className="calendar-cell__more">+{hiddenCount} more</span>}
+    </div>
+  );
+}
 
 // A day's inclusive start/end as local Date objects (midnight both ends).
 function eventDateRange(event) {
@@ -126,38 +227,23 @@ export default function CalendarView({ events, connected }) {
           const key = dateKey(date);
           const week = Math.floor(i / 7);
           const dayEvents = sortDayEvents(singleDayEventsByKey[key] || []);
-          const hiddenCount = dayEvents.length - MAX_VISIBLE_PER_DAY;
           const barsSpace = laneCountByWeek[week] * (BAR_HEIGHT + BAR_GAP);
           return (
-            <div
-              key={key}
-              className={[
-                'calendar-cell',
-                inMonth ? '' : 'calendar-cell--outside',
-                key === todayKey ? 'calendar-cell--today' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              style={{ gridRow: week + 2, gridColumn: (i % 7) + 1 }}
-            >
-              <span className="calendar-cell__day">{date.getDate()}</span>
-              <ul className="calendar-cell__events" style={barsSpace > 0 ? { marginTop: barsSpace } : undefined}>
-                {dayEvents.slice(0, MAX_VISIBLE_PER_DAY).map((event) => (
-                  <li
-                    key={event.id}
-                    className="event-pill calendar-cell__event"
-                    title={event.title}
-                    style={{ '--event-color': event.color || 'var(--color-accent)' }}
-                  >
-                    <span className="calendar-cell__event-text">{event.title}</span>
-                  </li>
-                ))}
-              </ul>
-              {/* Pinned outside the (overflow-clipped) events list so it's
-                  always fully visible — if space is tight, an event's text
-                  gets clipped before this ever would. */}
-              {hiddenCount > 0 && <span className="calendar-cell__more">+{hiddenCount} more</span>}
-            </div>
+            <DayCell
+              // Content-aware, not just the date: this day's own event IDs
+              // plus the bar space above it (from other days' multi-day
+              // events sharing this week) are exactly the two things that
+              // affect how many events fit, so either changing should
+              // force a fresh mount and re-measure — see DayCell's comment.
+              key={`${key}:${dayEvents.map((event) => event.id).join(',')}:${barsSpace}`}
+              date={date}
+              inMonth={inMonth}
+              isToday={key === todayKey}
+              dayEvents={dayEvents}
+              barsSpace={barsSpace}
+              gridRow={week + 2}
+              gridColumn={(i % 7) + 1}
+            />
           );
         })}
         {bars.map(({ event, week, lane, colStart, colEnd, isStart, isEnd }) => (
