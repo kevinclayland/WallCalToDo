@@ -30,6 +30,14 @@ body {
   font-size: 1.5rem;
 }
 
+/* Extra breathing room below the page's own top-level title, before
+   "General settings" right underneath it — the 0.25rem on the h1 above is
+   sized for a header immediately followed by its own subtitle, too tight
+   for the gap before a whole new section starts. */
+.page__header--main {
+  margin-bottom: 1.5rem;
+}
+
 /* Section-level headers (General settings, Google Calendar, Microsoft To
    Do Reminders) — smaller than the main "WallCalToDo" title above, all
    three sized and weighted the same as each other. */

@@ -336,7 +336,7 @@ export default function App() {
 
   return (
     <div className="page">
-      <header className="page__header">
+      <header className="page__header page__header--main">
         <h1>WallCalToDo</h1>
       </header>
 
