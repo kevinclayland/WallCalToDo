@@ -9,6 +9,21 @@ async function api(path, options) {
   return res.json();
 }
 
+// Same logic as frontend/src/App.jsx's effectiveTheme() — kept as its own
+// copy here since the two apps are separate Vite builds with nothing
+// shared between them. 'light'/'dark' settings are direct; 'auto'
+// switches at sunrise/sunset for the saved location; falls back to 'light'
+// (the companion app's own original, only-ever-shipped look) if settings
+// haven't loaded yet or auto mode has no location/sun-times to go on.
+function effectiveTheme(settings, now) {
+  if (!settings) return 'light';
+  if (settings.theme === 'light' || settings.theme === 'dark') return settings.theme;
+  if (!settings.sunrise || !settings.sunset) return 'light';
+  const sunrise = new Date(settings.sunrise);
+  const sunset = new Date(settings.sunset);
+  return now >= sunrise && now < sunset ? 'light' : 'dark';
+}
+
 // The OAuth redirect URI registered with Google/Microsoft is hardcoded to
 // http://localhost:3000/... (required — both providers only allow plain
 // http:// for the literal loopback address). So the final leg of the
@@ -104,6 +119,10 @@ export default function App() {
   const [msAccount, setMsAccount] = useState(null);
 
   const [settings, setSettings] = useState(null);
+  // Its own clock, same pattern as the kiosk display's App.jsx: only needs
+  // to catch the sunrise/sunset boundary passing while this page happens to
+  // be left open, not tick every second.
+  const [now, setNow] = useState(() => new Date());
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [locationBusy, setLocationBusy] = useState(false);
   const [placeQuery, setPlaceQuery] = useState('');
@@ -153,6 +172,19 @@ export default function App() {
     loadTodoLists();
     loadSettings();
   }, [loadAccounts, loadTodoLists, loadSettings]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Matches the companion app's own look to whatever theme is actually
+  // active on the wall display -- switching Light/Dark/Automatic here
+  // updates `settings` immediately (see setTheme below), which this picks
+  // straight up.
+  useEffect(() => {
+    document.documentElement.dataset.theme = effectiveTheme(settings, now);
+  }, [settings, now]);
 
   async function setTheme(theme) {
     setSettings((prev) => ({ ...prev, theme })); // optimistic — feels instant
