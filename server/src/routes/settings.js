@@ -46,7 +46,7 @@ settingsRouter.get('/geocode/reverse', async (req, res) => {
 });
 
 settingsRouter.patch('/settings', (req, res) => {
-  const { theme, location, sunriseOffset, sunsetOffset } = req.body || {};
+  const { theme, location, advancedEnabled, sunriseOffset, sunsetOffset } = req.body || {};
   const patch = {};
 
   if (theme !== undefined) {
@@ -58,6 +58,10 @@ settingsRouter.patch('/settings', (req, res) => {
       return res.status(400).json({ error: 'Invalid location' });
     }
     patch.location = location;
+  }
+  if (advancedEnabled !== undefined) {
+    if (typeof advancedEnabled !== 'boolean') return res.status(400).json({ error: 'Invalid advancedEnabled' });
+    patch.advancedEnabled = advancedEnabled;
   }
   if (sunriseOffset !== undefined) {
     if (!isValidOffset(sunriseOffset)) return res.status(400).json({ error: 'Invalid sunriseOffset' });

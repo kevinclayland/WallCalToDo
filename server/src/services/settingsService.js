@@ -4,12 +4,15 @@ import { getSunTimes } from './sunService.js';
 const SETTINGS_FILE = 'settings.json';
 // 'dark' matches the only look this project has ever shipped with, so a
 // fresh install (or one from before this setting existed) doesn't change
-// anything until someone actually opens the toggle. Offsets default to 0
-// (switch exactly at the real sunrise/sunset) until someone opens Advanced
-// and picks something else.
+// anything until someone actually opens the toggle. advancedEnabled is a
+// real on/off for the offsets, not just a UI show/hide -- off means they
+// don't apply at all (switch exactly at the real sunrise/sunset),
+// regardless of whatever sunriseOffset/sunsetOffset are saved as. Turning
+// it back on reapplies those saved values without needing to re-enter them.
 const DEFAULT_SETTINGS = {
   theme: 'dark',
   location: null,
+  advancedEnabled: false,
   sunriseOffset: { minutes: 0, direction: 'after' },
   sunsetOffset: { minutes: 0, direction: 'after' },
 };
@@ -39,6 +42,7 @@ export function getSettings() {
   const settings = loadSettings();
   if (!settings.location) return { ...settings, sunrise: null, sunset: null };
   const { sunrise, sunset } = getSunTimes(settings.location.lat, settings.location.lon);
+  if (!settings.advancedEnabled) return { ...settings, sunrise, sunset };
   return {
     ...settings,
     sunrise: applyOffset(sunrise, settings.sunriseOffset),

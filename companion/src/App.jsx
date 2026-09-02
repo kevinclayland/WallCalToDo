@@ -110,9 +110,6 @@ export default function App() {
   const [placeResults, setPlaceResults] = useState([]);
   const [placeSearching, setPlaceSearching] = useState(false);
   const [placeError, setPlaceError] = useState(null);
-  // Purely a local show/hide for the Sunrise/Sunset offset controls, not a
-  // saved setting itself -- doesn't need to persist across visits.
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -173,6 +170,21 @@ export default function App() {
     setSettings((prev) => ({ ...prev, [key]: offset })); // optimistic
     try {
       const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ [key]: offset }) });
+      setSettings(data);
+    } catch (err) {
+      setError(err.message);
+      loadSettings();
+    }
+  }
+
+  // A real on/off for whether sunriseOffset/sunsetOffset apply at all, not
+  // just a local show/hide -- off means the theme switches exactly at the
+  // real sunrise/sunset regardless of what's saved, on reapplies the saved
+  // values without needing to re-enter them.
+  async function setAdvancedEnabled(enabled) {
+    setSettings((prev) => ({ ...prev, advancedEnabled: enabled })); // optimistic
+    try {
+      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ advancedEnabled: enabled }) });
       setSettings(data);
     } catch (err) {
       setError(err.message);
@@ -423,12 +435,16 @@ export default function App() {
             <div className="advanced-toggle">
               <span className="advanced-toggle__label">Advanced</span>
               <label className="switch">
-                <input type="checkbox" checked={showAdvanced} onChange={(e) => setShowAdvanced(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={Boolean(settings.advancedEnabled)}
+                  onChange={(e) => setAdvancedEnabled(e.target.checked)}
+                />
                 <span className="switch__track" />
               </label>
             </div>
 
-            {showAdvanced && settings.location && settings.sunrise && settings.sunset && (
+            {settings.advancedEnabled && settings.location && settings.sunrise && settings.sunset && (
               <div className="sun-offsets">
                 <SunOffsetRow
                   title="Sunrise"
