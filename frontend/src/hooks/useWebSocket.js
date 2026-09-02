@@ -10,6 +10,7 @@ const RECONNECT_DELAY_MS = 2000;
 export function useWebSocket() {
   const [calendar, setCalendar] = useState([]);
   const [todo, setTodo] = useState([]);
+  const [settings, setSettings] = useState(null);
   const [connected, setConnected] = useState(false);
   const socketRef = useRef(null);
 
@@ -32,6 +33,7 @@ export function useWebSocket() {
         const message = JSON.parse(event.data);
         if (message.type === 'calendar') setCalendar(message.data);
         else if (message.type === 'todo') setTodo(message.data);
+        else if (message.type === 'settings') setSettings(message.data);
       };
     }
 
@@ -43,5 +45,5 @@ export function useWebSocket() {
     };
   }, []);
 
-  return { calendar, todo, connected };
+  return { calendar, todo, settings, connected };
 }

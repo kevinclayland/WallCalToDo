@@ -4,28 +4,15 @@
  * Component-specific styling (event pill treatment, the calendar grid,
  * exact layout dimensions) lives in base.css and the components
  * themselves; this file is just the shared values they're built from.
+ *
+ * Colors are split into two theme blocks below (dark/light) instead of one
+ * flat :root — App.jsx sets data-theme="dark"|"light" on <html> based on
+ * the theme setting from the companion app (light/dark/automatic, the
+ * latter switching at sunrise/sunset for a saved location — see
+ * useWebSocket.js and server/src/services/settingsService.js). Everything
+ * else (font/spacing/radius) is theme-independent and stays in plain :root.
  */
 :root {
-  /* Exact values below (bg/surface/border/today/online/muted/agenda-text)
-     are taken directly from the Figma mockup SVG, not estimated. */
-  --color-bg: #000000;
-  --color-surface: #101212;
-  --color-text: #f5f5f5;
-  /* Softer than pure white — used for the agenda/to-do section body text
-     per the mockup; the calendar's month title and day numbers stay pure
-     white (see .calendar-header, .calendar-cell__day). */
-  --color-text-agenda: #d6e0ea;
-  --color-text-muted: #9aa0a6;
-  --color-accent: #4f8cff;
-  --color-border: #1b1f1f;
-  --color-online: #3ddc84;
-  --color-offline: #ff0000;
-  /* Fixed "today" marker color — deliberately independent of any
-     calendar's own color, so today always reads the same regardless of
-     what's on the schedule. */
-  --color-today: #ff0000;
-  --color-checkbox: #49454f;
-
   /* The emoji names at the end are deliberate, not decorative: an event
      title with an emoji in it (from Google Calendar) falls through to
      whichever of these is actually installed for that glyph — 'Noto
@@ -45,4 +32,55 @@
   --space-lg: 4rem;
 
   --radius: 12px;
+}
+
+/* Dark is the only look this project has ever shipped with — also the
+   fallback (via the plain :root selector below) for the moment before
+   App.jsx has fetched settings over the WebSocket and set data-theme
+   explicitly, so there's no flash of the wrong theme on load. Exact values
+   (bg/surface/border/today/online/muted/agenda-text) are taken directly
+   from the Figma mockup SVG, not estimated. */
+:root,
+:root[data-theme='dark'] {
+  --color-bg: #000000;
+  --color-surface: #101212;
+  --color-text: #f5f5f5;
+  /* Softer than pure white — used for the agenda/to-do section body text
+     per the mockup; the calendar's month title and day numbers stay pure
+     white (see .calendar-header, .calendar-cell__day). */
+  --color-text-agenda: #d6e0ea;
+  --color-text-muted: #9aa0a6;
+  --color-accent: #4f8cff;
+  --color-border: #1b1f1f;
+  --color-online: #3ddc84;
+  --color-offline: #ff0000;
+  /* Fixed "today" marker color — deliberately independent of any
+     calendar's own color, so today always reads the same regardless of
+     what's on the schedule. */
+  --color-today: #ff0000;
+  --color-checkbox: #49454f;
+  /* Event pill text (.event-pill) — white reads reliably against the dark
+     background showing through the pill's tinted fill. */
+  --color-pill-text: #ffffff;
+}
+
+/* Light theme — same structure as dark, inverted for a bright room rather
+   than a naive color invert (e.g. accent/online/offline are deepened
+   slightly so they still meet contrast against a white background). */
+:root[data-theme='light'] {
+  --color-bg: #ffffff;
+  --color-surface: #f4f5f7;
+  --color-text: #1a1a1a;
+  --color-text-agenda: #33393f;
+  --color-text-muted: #6b7280;
+  --color-accent: #2563eb;
+  --color-border: #e2e4e8;
+  --color-online: #16a34a;
+  --color-offline: #dc2626;
+  --color-today: #dc2626;
+  --color-checkbox: #9aa0a6;
+  /* Dark text instead of white — the pill's tinted fill is now a light
+     tint over a white/near-white background, so dark text is what reads
+     reliably here (the inverse reasoning from dark theme's white). */
+  --color-pill-text: #1a1a1a;
 }

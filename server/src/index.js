@@ -6,6 +6,7 @@ import { config } from './config.js';
 import { authRouter } from './routes/auth.js';
 import { apiRouter } from './routes/api.js';
 import { accountsRouter } from './routes/accounts.js';
+import { settingsRouter } from './routes/settings.js';
 import { initWebSocket } from './ws/hub.js';
 import { startPolling } from './services/poller.js';
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/auth', authRouter);
 app.use('/api', apiRouter);
 app.use('/api', accountsRouter);
+app.use('/api', settingsRouter);
 
 // Two frontends, one server: the kiosk display (frontend/dist, served at
 // "/") and the companion settings app (companion/dist, served at

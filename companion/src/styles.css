@@ -214,3 +214,83 @@ body {
 .add-account-note code {
   font-size: 0.85em;
 }
+
+.settings-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.settings-card__heading {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.segmented {
+  display: flex;
+  background: #f0f1f3;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.segmented__option {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.segmented__option.is-active {
+  background: #fff;
+  color: #1a1d21;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.segmented__option:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.location-settings {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f1f3;
+}
+
+.location-settings__hint {
+  margin: 0 0 0.5rem;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.location-settings__times {
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+}
+
+.location-settings > .button--ghost {
+  margin-bottom: 0.5rem;
+}
+
+.location-settings__manual {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.location-settings__manual input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+}

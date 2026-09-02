@@ -138,6 +138,15 @@ the calendar side from your phone or laptop, on the same Wi-Fi as the Pi:
 - **Refresh calendars** — Google doesn't notify us when you create a new
   calendar, so this button re-fetches an account's calendar list on
   demand (new calendars default to enabled).
+- **General settings — theme** — a Light/Dark/Automatic segmented control
+  at the top of the page. Automatic switches the wall display between
+  light and dark at sunrise/sunset for a location you set (via "Use my
+  location" — only available when the companion app is opened somewhere
+  geolocation is allowed, i.e. the Pi's own screen — or manual
+  latitude/longitude). Sunrise/sunset is computed locally on the backend
+  (`server/src/services/sunService.js`), no external API or internet
+  dependency. The change pushes to the wall display immediately over the
+  same WebSocket connection used for calendar/to-do updates.
 
 This intentionally does *not* have a login/passcode — it trusts your home
 network, same as the rest of this setup. It's also **not reachable from
@@ -150,8 +159,10 @@ from your phone — see step 8 of the setup guide below for why. Everyday
 use of the companion app (toggling calendars, disconnecting an account)
 works fine from your phone once accounts are already connected.
 
-There's deliberately no theme switching here yet — that's waiting on the
-real visual design (see "Design" below).
+Note that geolocation itself (the "Use my location" button, for Automatic
+theme mode) needs a secure context — same restriction as the OAuth connect
+flow above, so it only shows up when the companion app is opened on the
+Pi's own screen. The manual latitude/longitude fields work from anywhere.
 
 ## Hardware notes
 
@@ -390,8 +401,10 @@ base.css` and the component files (`CalendarView.jsx`, `DayAgenda.jsx`,
 `TodoView.jsx`) for the actual layout and styling. It's been iterated on
 in place rather than built separately and dropped in: the calendar grid,
 event pill styling (a stroke in the event's own color over a tinted
-background, not a solid fill), multi-day event bars, and the fixed
-1520px/400px section split were all designed and shipped this way. The
-data layer (OAuth, polling, WebSocket push) is unaffected by any of it —
-styling changes stay confined to the two style files and component
-markup.
+background, not a solid fill), multi-day event bars, the fixed
+1520px/400px section split, and a light/dark theme (`tokens.css` defines
+both palettes behind a `data-theme` attribute App.jsx sets on `<html>`,
+driven by the companion app's theme setting) were all designed and
+shipped this way. The data layer (OAuth, polling, WebSocket push) is
+unaffected by any of it — styling changes stay confined to the two style
+files and component markup.

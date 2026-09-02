@@ -20,6 +20,22 @@ async function api(path, options) {
 // that same condition instead of letting it fail confusingly.
 const CAN_ADD_ACCOUNTS = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
+// Browser geolocation is only available in a secure context (https:, or the
+// localhost/127.0.0.1 exception) — same underlying restriction as the OAuth
+// callback above, different mechanism. Off the Pi's own screen (plain http
+// over the LAN), the API itself won't be there to call.
+const CAN_USE_GEOLOCATION = typeof navigator !== 'undefined' && Boolean(navigator.geolocation) && window.isSecureContext;
+
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'auto', label: 'Automatic' },
+];
+
+function formatTime(isoString) {
+  return new Date(isoString).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
 export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +45,28 @@ export default function App() {
   const [todoLists, setTodoLists] = useState([]);
   const [todoLoading, setTodoLoading] = useState(true);
   const [todoBusy, setTodoBusy] = useState(false);
+
+  const [settings, setSettings] = useState(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [locationBusy, setLocationBusy] = useState(false);
+  const [latInput, setLatInput] = useState('');
+  const [lonInput, setLonInput] = useState('');
+
+  const loadSettings = useCallback(async () => {
+    try {
+      const data = await api('/settings');
+      setSettings(data);
+      if (data.location) {
+        setLatInput(String(data.location.lat));
+        setLonInput(String(data.location.lon));
+      }
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
 
   const loadAccounts = useCallback(async () => {
     try {
@@ -57,7 +95,59 @@ export default function App() {
   useEffect(() => {
     loadAccounts();
     loadTodoLists();
-  }, [loadAccounts, loadTodoLists]);
+    loadSettings();
+  }, [loadAccounts, loadTodoLists, loadSettings]);
+
+  async function setTheme(theme) {
+    setSettings((prev) => ({ ...prev, theme })); // optimistic — feels instant
+    try {
+      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ theme }) });
+      setSettings(data);
+    } catch (err) {
+      setError(err.message);
+      loadSettings();
+    }
+  }
+
+  async function saveLocation(lat, lon) {
+    setLocationBusy(true);
+    try {
+      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ location: { lat, lon } }) });
+      setSettings(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLocationBusy(false);
+    }
+  }
+
+  function useMyLocation() {
+    setLocationBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setLatInput(String(latitude));
+        setLonInput(String(longitude));
+        saveLocation(latitude, longitude);
+      },
+      (err) => {
+        setError(`Couldn't get your location: ${err.message}`);
+        setLocationBusy(false);
+      }
+    );
+  }
+
+  function submitManualLocation(e) {
+    e.preventDefault();
+    const lat = parseFloat(latInput);
+    const lon = parseFloat(lonInput);
+    if (Number.isNaN(lat) || Number.isNaN(lon)) {
+      setError('Enter valid latitude and longitude numbers.');
+      return;
+    }
+    saveLocation(lat, lon);
+  }
 
   async function toggleCalendar(accountId, calendarId, enabled) {
     // Optimistic update so the switch feels instant; reconciled by the
@@ -142,6 +232,72 @@ export default function App() {
     <div className="page">
       <header className="page__header">
         <h1>WallCalToDo</h1>
+      </header>
+
+      <section className="settings-card">
+        <h2 className="settings-card__heading">General settings</h2>
+        <div className="segmented" role="group" aria-label="Theme">
+          {THEME_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              className={`segmented__option${settings?.theme === value ? ' is-active' : ''}`}
+              disabled={settingsLoading}
+              onClick={() => setTheme(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {settings?.theme === 'auto' && (
+          <div className="location-settings">
+            <p className="location-settings__hint">
+              Automatic switches between light and dark at sunrise and sunset for this location.
+            </p>
+
+            {settings.location && settings.sunrise && settings.sunset && (
+              <p className="location-settings__times">
+                Sunrise {formatTime(settings.sunrise)} · Sunset {formatTime(settings.sunset)}
+              </p>
+            )}
+            {settings.location && (!settings.sunrise || !settings.sunset) && (
+              <p className="location-settings__times">
+                The sun doesn't rise or set today at this location — staying on dark.
+              </p>
+            )}
+
+            {CAN_USE_GEOLOCATION && (
+              <button type="button" className="button button--ghost" disabled={locationBusy} onClick={useMyLocation}>
+                Use my location
+              </button>
+            )}
+
+            <form className="location-settings__manual" onSubmit={submitManualLocation}>
+              <input
+                type="number"
+                step="any"
+                placeholder="Latitude"
+                value={latInput}
+                onChange={(e) => setLatInput(e.target.value)}
+              />
+              <input
+                type="number"
+                step="any"
+                placeholder="Longitude"
+                value={lonInput}
+                onChange={(e) => setLonInput(e.target.value)}
+              />
+              <button type="submit" className="button button--ghost" disabled={locationBusy}>
+                Set
+              </button>
+            </form>
+          </div>
+        )}
+      </section>
+
+      <header className="page__header">
+        <h1>Google Calendar</h1>
         <p className="page__subtitle">Manage which Google calendars show up on the display.</p>
       </header>
 
@@ -208,7 +364,7 @@ export default function App() {
       )}
 
       <header className="page__header page__header--section">
-        <h1>Microsoft To Do</h1>
+        <h1>Microsoft To Do Reminders</h1>
         <p className="page__subtitle">Choose which lists show up on the display — including ones shared with you.</p>
       </header>
 

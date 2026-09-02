@@ -168,13 +168,15 @@ body {
    (.agenda__pill) — same look everywhere: a stroke in the event's own
    color with a faint 30%-tinted fill of that same color (so the pill
    still reads as "this event's color" without fully covering the day
-   square/agenda panel color behind it). White text reads reliably
-   against that regardless of how light/dark the event color is. Each
-   consumer adds its own sizing/positioning on top. */
+   square/agenda panel color behind it). Text color (--color-pill-text,
+   see tokens.css) flips with the theme — white over the tinted fill in
+   dark mode, dark text in light mode — since a fixed color would only
+   read reliably against one background. Each consumer adds its own
+   sizing/positioning on top. */
 .event-pill {
   background: color-mix(in srgb, var(--event-color, var(--color-accent)) 30%, transparent);
   border: 2px solid var(--event-color, var(--color-accent));
-  color: #ffffff;
+  color: var(--color-pill-text);
   font-weight: 600;
   line-height: 1.3;
   /* An absolute radius (not a %/stadium shape) so it stays exactly 15px
