@@ -259,14 +259,23 @@ body {
 .todo {
   min-height: 0;
   padding: var(--space-sm) var(--space-md);
-  overflow-y: auto;
   font-size: 1.125rem;
   /* Softer off-white than the calendar's pure-white text, per the mockup. */
   color: var(--color-text-agenda);
 }
 
 .todo {
+  overflow-y: auto;
   border-left: 1px solid var(--color-border);
+}
+
+.agenda {
+  /* A column so .agenda__list (flex: 1 below) gets a definite, bounded
+     height to shrink-to-fit against — see DayAgenda.jsx's font-size
+     binary search. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .agenda__heading,
@@ -275,20 +284,42 @@ body {
   margin: 0 0 var(--space-sm);
 }
 
+.agenda__heading {
+  /* Keeps its own size regardless of how packed the list below gets —
+     only .agenda__list shrinks to fit, never the date heading. */
+  flex-shrink: 0;
+}
+
 .agenda__list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  /* em, not --space-xs: scales down with the row text on a packed day
+     (see --agenda-font-size below) instead of staying a fixed gap that
+     eats into the very room the shrink is trying to reclaim. ~8px at
+     the default 22px, matching --space-xs almost exactly. */
+  gap: 0.35em;
+  flex: 1;
+  min-height: 0;
+  /* Fallback only: DayAgenda.jsx shrinks --agenda-font-size until
+     content fits without this ever needing to scroll (this display
+     has no touch/scroll input), down to a floor matched to the
+     calendar's own pill text — this only kicks in if that floor still
+     isn't enough, which shouldn't happen in practice. */
+  overflow-y: auto;
+  /* Single control point for the whole row's scale — pill padding/
+     radius and the time column's width all size off of it in em, so
+     setting this one variable (from DayAgenda.jsx) scales an agenda
+     row the same way growing/shrinking the design's base font would. */
+  font-size: var(--agenda-font-size, 22px);
 }
 
 .agenda__item {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  font-size: 22px;
 }
 
 .agenda__time {
@@ -301,10 +332,11 @@ body {
 
 .agenda__pill {
   /* Same stroke-pill look as the calendar's own event pills (.event-pill
-     supplies the border/tinted-background/white-text) — just sized up to
-     match the day view's larger 22px row text. +2px top and bottom over
+     supplies the border/tinted-background/white-text) — sized off the
+     inherited row font-size (.agenda__list's --agenda-font-size, 22px
+     by default) rather than its own fixed value, so it shrinks along
+     with the rest of the row on a packed day. +2px top and bottom over
      the plain em-based padding, same as the calendar pills. */
-  font-size: 22px;
   padding: calc(0.2em + 2px) 0.7em;
   /* Fixed radius, not a %/stadium shape — same idea as the calendar
      pills' fixed 15px. Computed to be exactly half of this pill's own
