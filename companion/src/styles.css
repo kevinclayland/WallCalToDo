@@ -204,3 +204,13 @@ body {
   padding: 0.9rem;
   font-size: 1rem;
 }
+
+.add-account-note {
+  margin: 1.5rem 0 0;
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.add-account-note code {
+  font-size: 0.85em;
+}
