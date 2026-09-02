@@ -276,21 +276,66 @@ body {
   font-weight: 600;
 }
 
-.location-settings > .button--ghost {
-  margin-bottom: 0.5rem;
+.location-settings__current {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
 }
 
-.location-settings__manual {
+.location-settings__search {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.5rem;
 }
 
-.location-settings__manual input {
+.location-settings__search input {
   flex: 1;
   min-width: 0;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   padding: 0.4rem 0.5rem;
   font-size: 0.9rem;
+}
+
+.location-settings__error {
+  margin: 0.5rem 0 0;
+  color: #991b1b;
+  font-size: 0.85rem;
+}
+
+.location-settings__results {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.location-settings__result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-top: 1px solid #f0f1f3;
+  background: #fff;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.location-settings__results li:first-child .location-settings__result {
+  border-top: none;
+}
+
+.location-settings__result:hover {
+  background: #f4f5f7;
+}
+
+.location-settings__result:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.location-settings__geo {
+  display: block;
+  margin-top: 0.75rem;
 }

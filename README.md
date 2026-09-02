@@ -140,13 +140,17 @@ the calendar side from your phone or laptop, on the same Wi-Fi as the Pi:
   demand (new calendars default to enabled).
 - **General settings — theme** — a Light/Dark/Automatic segmented control
   at the top of the page. Automatic switches the wall display between
-  light and dark at sunrise/sunset for a location you set (via "Use my
-  location" — only available when the companion app is opened somewhere
-  geolocation is allowed, i.e. the Pi's own screen — or manual
-  latitude/longitude). Sunrise/sunset is computed locally on the backend
-  (`server/src/services/sunService.js`), no external API or internet
-  dependency. The change pushes to the wall display immediately over the
-  same WebSocket connection used for calendar/to-do updates.
+  light and dark at sunrise/sunset for a location you set by **searching
+  for a city** (backed by OpenStreetMap's free Nominatim geocoder,
+  `server/src/services/geocodeService.js` — this one part does need
+  internet access, unlike the sunrise/sunset math itself) — works from
+  any device, including your phone. "Use my location" is also there as a
+  zero-typing shortcut when it's available, but browser geolocation needs
+  a secure context, so it only shows up when the companion app is opened
+  on the Pi's own screen. Sunrise/sunset itself is computed locally
+  (`server/src/services/sunService.js`), no API call needed for that
+  part. The change pushes to the wall display immediately over the same
+  WebSocket connection used for calendar/to-do updates.
 
 This intentionally does *not* have a login/passcode — it trusts your home
 network, same as the rest of this setup. It's also **not reachable from
@@ -162,7 +166,8 @@ works fine from your phone once accounts are already connected.
 Note that geolocation itself (the "Use my location" button, for Automatic
 theme mode) needs a secure context — same restriction as the OAuth connect
 flow above, so it only shows up when the companion app is opened on the
-Pi's own screen. The manual latitude/longitude fields work from anywhere.
+Pi's own screen. Searching for a city works from anywhere, including your
+phone — that's the normal way to set a location.
 
 ## Hardware notes
 

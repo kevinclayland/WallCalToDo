@@ -49,17 +49,15 @@ export default function App() {
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [locationBusy, setLocationBusy] = useState(false);
-  const [latInput, setLatInput] = useState('');
-  const [lonInput, setLonInput] = useState('');
+  const [placeQuery, setPlaceQuery] = useState('');
+  const [placeResults, setPlaceResults] = useState([]);
+  const [placeSearching, setPlaceSearching] = useState(false);
+  const [placeError, setPlaceError] = useState(null);
 
   const loadSettings = useCallback(async () => {
     try {
       const data = await api('/settings');
       setSettings(data);
-      if (data.location) {
-        setLatInput(String(data.location.lat));
-        setLonInput(String(data.location.lon));
-      }
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -109,10 +107,11 @@ export default function App() {
     }
   }
 
-  async function saveLocation(lat, lon) {
+  async function saveLocation(lat, lon, label) {
     setLocationBusy(true);
     try {
-      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ location: { lat, lon } }) });
+      const location = label ? { lat, lon, label } : { lat, lon };
+      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ location }) });
       setSettings(data);
       setError(null);
     } catch (err) {
@@ -122,14 +121,23 @@ export default function App() {
     }
   }
 
+  // Zero-typing option when it's available — but only works in a secure
+  // context (see CAN_USE_GEOLOCATION), so city search below is the one that
+  // works from anywhere, including a phone setting this up over plain LAN
+  // http.
   function useMyLocation() {
     setLocationBusy(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
-        setLatInput(String(latitude));
-        setLonInput(String(longitude));
-        saveLocation(latitude, longitude);
+        let label;
+        try {
+          label = (await api(`/geocode/reverse?lat=${latitude}&lon=${longitude}`)).label;
+        } catch {
+          // Non-fatal — still save the coordinates, just without a
+          // friendly name to show for them.
+        }
+        saveLocation(latitude, longitude, label);
       },
       (err) => {
         setError(`Couldn't get your location: ${err.message}`);
@@ -138,15 +146,27 @@ export default function App() {
     );
   }
 
-  function submitManualLocation(e) {
+  async function searchPlace(e) {
     e.preventDefault();
-    const lat = parseFloat(latInput);
-    const lon = parseFloat(lonInput);
-    if (Number.isNaN(lat) || Number.isNaN(lon)) {
-      setError('Enter valid latitude and longitude numbers.');
-      return;
+    const q = placeQuery.trim();
+    if (!q) return;
+    setPlaceSearching(true);
+    setPlaceError(null);
+    try {
+      const { results } = await api(`/geocode?q=${encodeURIComponent(q)}`);
+      setPlaceResults(results);
+      if (results.length === 0) setPlaceError("No matches — try a different search.");
+    } catch (err) {
+      setPlaceError(err.message);
+    } finally {
+      setPlaceSearching(false);
     }
-    saveLocation(lat, lon);
+  }
+
+  function choosePlace(place) {
+    setPlaceResults([]);
+    setPlaceQuery('');
+    saveLocation(place.lat, place.lon, place.label);
   }
 
   async function toggleCalendar(accountId, calendarId, enabled) {
@@ -256,6 +276,12 @@ export default function App() {
               Automatic switches between light and dark at sunrise and sunset for this location.
             </p>
 
+            {settings.location && (
+              <p className="location-settings__current">
+                Currently set to{' '}
+                <strong>{settings.location.label || `${settings.location.lat.toFixed(2)}, ${settings.location.lon.toFixed(2)}`}</strong>
+              </p>
+            )}
             {settings.location && settings.sunrise && settings.sunset && (
               <p className="location-settings__times">
                 Sunrise {formatTime(settings.sunrise)} · Sunset {formatTime(settings.sunset)}
@@ -267,31 +293,47 @@ export default function App() {
               </p>
             )}
 
-            {CAN_USE_GEOLOCATION && (
-              <button type="button" className="button button--ghost" disabled={locationBusy} onClick={useMyLocation}>
-                Use my location
-              </button>
-            )}
-
-            <form className="location-settings__manual" onSubmit={submitManualLocation}>
+            <form className="location-settings__search" onSubmit={searchPlace}>
               <input
-                type="number"
-                step="any"
-                placeholder="Latitude"
-                value={latInput}
-                onChange={(e) => setLatInput(e.target.value)}
+                type="text"
+                placeholder="Search for a city"
+                value={placeQuery}
+                onChange={(e) => setPlaceQuery(e.target.value)}
               />
-              <input
-                type="number"
-                step="any"
-                placeholder="Longitude"
-                value={lonInput}
-                onChange={(e) => setLonInput(e.target.value)}
-              />
-              <button type="submit" className="button button--ghost" disabled={locationBusy}>
-                Set
+              <button type="submit" className="button button--ghost" disabled={placeSearching || !placeQuery.trim()}>
+                Search
               </button>
             </form>
+
+            {placeError && <p className="location-settings__error">{placeError}</p>}
+
+            {placeResults.length > 0 && (
+              <ul className="location-settings__results">
+                {placeResults.map((place) => (
+                  <li key={`${place.lat},${place.lon}`}>
+                    <button
+                      type="button"
+                      className="location-settings__result"
+                      disabled={locationBusy}
+                      onClick={() => choosePlace(place)}
+                    >
+                      {place.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {CAN_USE_GEOLOCATION && (
+              <button
+                type="button"
+                className="button button--ghost location-settings__geo"
+                disabled={locationBusy}
+                onClick={useMyLocation}
+              >
+                Use my location instead
+              </button>
+            )}
           </div>
         )}
       </section>
