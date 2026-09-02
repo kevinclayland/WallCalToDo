@@ -99,6 +99,13 @@ export function dropListCache(listId) {
   saveSync(sync);
 }
 
+// Wipes every list's cached tasks/sync state — used when disconnecting the
+// Microsoft account entirely, since there's only ever the one account.
+export function dropAllListsCache() {
+  saveTasks({});
+  saveSync({});
+}
+
 // Only tasks from currently-enabled lists are returned — toggling a list
 // off in the companion app takes effect immediately, without waiting for
 // or triggering a new poll.

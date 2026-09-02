@@ -64,6 +64,28 @@ export async function isAuthorized() {
   return accounts.length > 0;
 }
 
+// { email } for the companion app to display, or null if nothing's
+// connected yet — mirrors how each Google account shows its email.
+export async function getConnectedAccount() {
+  if (!config.ms.clientId || !config.ms.clientSecret) return null;
+  const accounts = await getClient().getTokenCache().getAllAccounts();
+  return accounts[0] ? { email: accounts[0].username } : null;
+}
+
+// Removes the account from MSAL's persisted token cache and clears the
+// list of To Do lists — the actual cached tasks/sync state is cleared
+// separately by todoService.dropAllListsCache(), same split as Google's
+// removeAccount()/dropAccountCache() pair.
+export async function disconnectAccount() {
+  if (!config.ms.clientId || !config.ms.clientSecret) return;
+  const client = getClient();
+  const accounts = await client.getTokenCache().getAllAccounts();
+  for (const account of accounts) {
+    await client.getTokenCache().removeAccount(account);
+  }
+  writeJson(LISTS_FILE, []);
+}
+
 // MSAL persists the refresh token in its cache (via cachePlugin above) and
 // silently uses it to mint a new access token here whenever the old one
 // has expired — no manual refresh-token bookkeeping needed.

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as googleAuth from '../auth/googleAuth.js';
 import * as microsoftAuth from '../auth/microsoftAuth.js';
 import { pollCalendar, getCachedEvents, dropAccountCache } from '../services/calendarService.js';
-import { getCachedTasks, dropListCache } from '../services/todoService.js';
+import { getCachedTasks, dropListCache, dropAllListsCache } from '../services/todoService.js';
 import { broadcast } from '../ws/hub.js';
 
 export const accountsRouter = Router();
@@ -11,8 +11,21 @@ accountsRouter.get('/accounts', (req, res) => {
   res.json({ google: googleAuth.listAccounts() });
 });
 
-accountsRouter.get('/todo/lists', (req, res) => {
-  res.json({ lists: microsoftAuth.listTodoLists() });
+accountsRouter.get('/todo/lists', async (req, res) => {
+  res.json({ lists: microsoftAuth.listTodoLists(), account: await microsoftAuth.getConnectedAccount() });
+});
+
+// Only one Microsoft account is ever connected at a time, so this doesn't
+// need an :accountId param the way Google's DELETE /accounts/:id does.
+accountsRouter.delete('/todo/account', async (req, res) => {
+  try {
+    await microsoftAuth.disconnectAccount();
+    dropAllListsCache();
+    broadcast({ type: 'todo', data: getCachedTasks() });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 // Toggling a list takes effect immediately — no repoll needed,

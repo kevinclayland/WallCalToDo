@@ -33,7 +33,7 @@ const THEME_OPTIONS = [
 ];
 
 const OFFSET_MINUTES_OPTIONS = [
-  { value: 0, label: '0 min' },
+  { value: 0, label: 'No delay' },
   { value: 15, label: '15 min' },
   { value: 30, label: '30 min' },
   { value: 45, label: '45 min' },
@@ -52,6 +52,10 @@ function formatTime(isoString) {
 // Before/After segmented control next to it. `offset` is always present
 // (the server defaults it), so this never needs to handle it being unset.
 function SunOffsetRow({ title, time, offset, disabled, onChange }) {
+  // Before/After is meaningless at "No delay" (0 minutes either direction
+  // is the same moment), so disable it rather than leave a control that
+  // does nothing sitting there active.
+  const directionDisabled = disabled || offset.minutes === 0;
   return (
     <div className="sun-offset">
       <p className="sun-offset__title">
@@ -76,7 +80,7 @@ function SunOffsetRow({ title, time, offset, disabled, onChange }) {
               key={direction}
               type="button"
               className={`segmented__option${offset.direction === direction ? ' is-active' : ''}`}
-              disabled={disabled}
+              disabled={directionDisabled}
               onClick={() => onChange({ ...offset, direction })}
             >
               {direction === 'before' ? 'Before' : 'After'}
@@ -97,6 +101,7 @@ export default function App() {
   const [todoLists, setTodoLists] = useState([]);
   const [todoLoading, setTodoLoading] = useState(true);
   const [todoBusy, setTodoBusy] = useState(false);
+  const [msAccount, setMsAccount] = useState(null);
 
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -137,6 +142,7 @@ export default function App() {
     try {
       const data = await api('/todo/lists');
       setTodoLists(data.lists);
+      setMsAccount(data.account);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -307,6 +313,19 @@ export default function App() {
     setTodoBusy(true);
     try {
       await api('/todo/refresh', { method: 'POST' });
+      await loadTodoLists();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTodoBusy(false);
+    }
+  }
+
+  async function disconnectMsAccount(email) {
+    if (!window.confirm(`Disconnect ${email}? Its to-do items will disappear from the display.`)) return;
+    setTodoBusy(true);
+    try {
+      await api('/todo/account', { method: 'DELETE' });
       await loadTodoLists();
     } catch (err) {
       setError(err.message);
@@ -503,18 +522,24 @@ export default function App() {
         <p className="page__subtitle">Choose which lists show up on the display — including ones shared with you.</p>
       </header>
 
-      {!todoLoading && todoLists.length === 0 && (
-        <p className="banner">
-          No Microsoft account connected yet, or no To Do lists found. Connect one below to get started.
-        </p>
+      {!todoLoading && !msAccount && (
+        <p className="banner">No Microsoft account connected yet. Add one below to get started.</p>
       )}
 
-      {todoLists.length > 0 && (
+      {msAccount && (
         <section className="account-card">
           <div className="account-card__header">
+            <h2>{msAccount.email}</h2>
             <div className="account-card__actions">
               <button className="button button--ghost" disabled={todoBusy} onClick={refreshTodoLists}>
                 Refresh lists
+              </button>
+              <button
+                className="button button--danger"
+                disabled={todoBusy}
+                onClick={() => disconnectMsAccount(msAccount.email)}
+              >
+                Disconnect
               </button>
             </div>
           </div>
@@ -533,6 +558,7 @@ export default function App() {
                 </label>
               </li>
             ))}
+            {todoLists.length === 0 && <li className="calendar-row calendar-row--empty">No lists found.</li>}
           </ul>
         </section>
       )}
