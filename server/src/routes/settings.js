@@ -5,6 +5,16 @@ import { broadcast } from '../ws/hub.js';
 
 export const settingsRouter = Router();
 
+const OFFSET_MINUTES = [15, 30, 45, 60, 120, 180];
+
+function isValidOffset(offset) {
+  return (
+    offset &&
+    OFFSET_MINUTES.includes(offset.minutes) &&
+    ['before', 'after'].includes(offset.direction)
+  );
+}
+
 settingsRouter.get('/settings', (req, res) => {
   res.json(getSettings());
 });
@@ -36,7 +46,7 @@ settingsRouter.get('/geocode/reverse', async (req, res) => {
 });
 
 settingsRouter.patch('/settings', (req, res) => {
-  const { theme, location } = req.body || {};
+  const { theme, location, sunriseOffset, sunsetOffset } = req.body || {};
   const patch = {};
 
   if (theme !== undefined) {
@@ -48,6 +58,14 @@ settingsRouter.patch('/settings', (req, res) => {
       return res.status(400).json({ error: 'Invalid location' });
     }
     patch.location = location;
+  }
+  if (sunriseOffset !== undefined) {
+    if (!isValidOffset(sunriseOffset)) return res.status(400).json({ error: 'Invalid sunriseOffset' });
+    patch.sunriseOffset = sunriseOffset;
+  }
+  if (sunsetOffset !== undefined) {
+    if (!isValidOffset(sunsetOffset)) return res.status(400).json({ error: 'Invalid sunsetOffset' });
+    patch.sunsetOffset = sunsetOffset;
   }
 
   const settings = updateSettings(patch);

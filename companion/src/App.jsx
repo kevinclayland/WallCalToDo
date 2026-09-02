@@ -32,8 +32,59 @@ const THEME_OPTIONS = [
   { value: 'auto', label: 'Automatic' },
 ];
 
+const OFFSET_MINUTES_OPTIONS = [
+  { value: 15, label: '15 min' },
+  { value: 30, label: '30 min' },
+  { value: 45, label: '45 min' },
+  { value: 60, label: '1 hour' },
+  { value: 120, label: '2 hours' },
+  { value: 180, label: '3 hours' },
+];
+
 function formatTime(isoString) {
   return new Date(isoString).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+// One row of the Sunrise/Sunset offset editor: a title showing the
+// already-offset-adjusted time (the actual moment the theme will switch,
+// not the raw astronomical one), a minutes-amount dropdown, and a
+// Before/After segmented control next to it. `offset` is always present
+// (the server defaults it), so this never needs to handle it being unset.
+function SunOffsetRow({ title, time, offset, disabled, onChange }) {
+  return (
+    <div className="sun-offset">
+      <p className="sun-offset__title">
+        {title} {time ? formatTime(time) : '—'}
+      </p>
+      <div className="sun-offset__controls">
+        <select
+          className="sun-offset__select"
+          value={offset.minutes}
+          disabled={disabled}
+          onChange={(e) => onChange({ ...offset, minutes: Number(e.target.value) })}
+        >
+          {OFFSET_MINUTES_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <div className="segmented segmented--compact" role="group" aria-label={`${title} timing`}>
+          {['before', 'after'].map((direction) => (
+            <button
+              key={direction}
+              type="button"
+              className={`segmented__option${offset.direction === direction ? ' is-active' : ''}`}
+              disabled={disabled}
+              onClick={() => onChange({ ...offset, direction })}
+            >
+              {direction === 'before' ? 'Before' : 'After'}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
@@ -100,6 +151,18 @@ export default function App() {
     setSettings((prev) => ({ ...prev, theme })); // optimistic — feels instant
     try {
       const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ theme }) });
+      setSettings(data);
+    } catch (err) {
+      setError(err.message);
+      loadSettings();
+    }
+  }
+
+  // key is 'sunriseOffset' or 'sunsetOffset'.
+  async function setOffset(key, offset) {
+    setSettings((prev) => ({ ...prev, [key]: offset })); // optimistic
+    try {
+      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ [key]: offset }) });
       setSettings(data);
     } catch (err) {
       setError(err.message);
@@ -283,9 +346,22 @@ export default function App() {
               </p>
             )}
             {settings.location && settings.sunrise && settings.sunset && (
-              <p className="location-settings__times">
-                Sunrise {formatTime(settings.sunrise)} · Sunset {formatTime(settings.sunset)}
-              </p>
+              <div className="sun-offsets">
+                <SunOffsetRow
+                  title="Sunrise"
+                  time={settings.sunrise}
+                  offset={settings.sunriseOffset}
+                  disabled={settingsLoading}
+                  onChange={(offset) => setOffset('sunriseOffset', offset)}
+                />
+                <SunOffsetRow
+                  title="Sunset"
+                  time={settings.sunset}
+                  offset={settings.sunsetOffset}
+                  disabled={settingsLoading}
+                  onChange={(offset) => setOffset('sunsetOffset', offset)}
+                />
+              </div>
             )}
             {settings.location && (!settings.sunrise || !settings.sunset) && (
               <p className="location-settings__times">

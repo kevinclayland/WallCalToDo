@@ -4,22 +4,47 @@ import { getSunTimes } from './sunService.js';
 const SETTINGS_FILE = 'settings.json';
 // 'dark' matches the only look this project has ever shipped with, so a
 // fresh install (or one from before this setting existed) doesn't change
-// anything until someone actually opens the toggle.
-const DEFAULT_SETTINGS = { theme: 'dark', location: null };
+// anything until someone actually opens the toggle. The offsets default to
+// the smallest step in the companion app's dropdown (15 min, After) rather
+// than "no offset" -- there's no "none" option in that list, so this is the
+// closest thing to a neutral starting point.
+const DEFAULT_SETTINGS = {
+  theme: 'dark',
+  location: null,
+  sunriseOffset: { minutes: 15, direction: 'after' },
+  sunsetOffset: { minutes: 15, direction: 'after' },
+};
 
 function loadSettings() {
   return { ...DEFAULT_SETTINGS, ...readJson(SETTINGS_FILE, {}) };
 }
 
-// Settings plus today's sunrise/sunset for the saved location — what every
-// consumer (the settings API, the WebSocket push) actually wants. Computed
-// fresh on every call rather than cached: it's cheap pure math, and this
-// way it's never stale even if the server's been running since yesterday.
+// Shifts a sun-event time by the configured offset -- 'before' subtracts,
+// 'after' adds. This is what actually ties the companion app's Sunrise/
+// Sunset offset controls into the theme switch: getSettings() below returns
+// this adjusted time as `sunrise`/`sunset`, and that's the only thing
+// App.jsx's auto-theme check ever looks at, so it never needs to know
+// offsets exist at all.
+function applyOffset(date, offset) {
+  if (!date) return date;
+  const ms = offset.minutes * 60 * 1000;
+  return new Date(date.getTime() + (offset.direction === 'before' ? -ms : ms));
+}
+
+// Settings plus today's sunrise/sunset (already offset-adjusted) for the
+// saved location — what every consumer (the settings API, the WebSocket
+// push) actually wants. Computed fresh on every call rather than cached:
+// it's cheap pure math, and this way it's never stale even if the server's
+// been running since yesterday.
 export function getSettings() {
   const settings = loadSettings();
   if (!settings.location) return { ...settings, sunrise: null, sunset: null };
   const { sunrise, sunset } = getSunTimes(settings.location.lat, settings.location.lon);
-  return { ...settings, sunrise, sunset };
+  return {
+    ...settings,
+    sunrise: applyOffset(sunrise, settings.sunriseOffset),
+    sunset: applyOffset(sunset, settings.sunsetOffset),
+  };
 }
 
 export function updateSettings(patch) {

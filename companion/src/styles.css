@@ -281,6 +281,45 @@ body {
   font-size: 0.9rem;
 }
 
+.sun-offsets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.sun-offset__title {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sun-offset__controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sun-offset__select {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.85rem;
+  background: #fff;
+  color: #1a1d21;
+}
+
+.segmented--compact {
+  flex: 1;
+  padding: 2px;
+}
+
+.segmented--compact .segmented__option {
+  padding: 0.4rem 0.25rem;
+  font-size: 0.8rem;
+}
+
 .location-settings__search {
   display: flex;
   gap: 0.5rem;

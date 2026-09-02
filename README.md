@@ -149,7 +149,12 @@ the calendar side from your phone or laptop, on the same Wi-Fi as the Pi:
   a secure context, so it only shows up when the companion app is opened
   on the Pi's own screen. Sunrise/sunset itself is computed locally
   (`server/src/services/sunService.js`), no API call needed for that
-  part. The change pushes to the wall display immediately over the same
+  part. Once a location is set, a Sunrise row and a Sunset row each let
+  you shift the actual switch time by 15/30/45 min or 1/2/3 hours,
+  Before or After the real sun event (e.g. Sunset + 30 min "After" so it
+  doesn't go dark right at sunset) — the displayed time on each row is
+  already offset-adjusted, i.e. the moment the switch actually happens.
+  The change pushes to the wall display immediately over the same
   WebSocket connection used for calendar/to-do updates.
 
 This intentionally does *not* have a login/passcode — it trusts your home
