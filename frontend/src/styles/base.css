@@ -290,11 +290,16 @@ body {
 
 .agenda__pill {
   /* Same stroke-pill look as the calendar's own event pills (.event-pill
-     supplies the border/tinted-background/white-text/radius) — just
-     sized up to match the day view's larger 22px row text. +2px top and
-     bottom over the plain em-based padding, same as the calendar pills. */
+     supplies the border/tinted-background/white-text) — just sized up to
+     match the day view's larger 22px row text. +2px top and bottom over
+     the plain em-based padding, same as the calendar pills. */
   font-size: 22px;
   padding: calc(0.2em + 2px) 0.7em;
+  /* Full stadium shape, not the calendar pills' fixed 15px — a radius
+     this much larger than the box gets clamped by the browser to exactly
+     half the box's actual height, so it's always a true pill regardless
+     of how tall this ends up (single line vs. a wrapped one). */
+  border-radius: 999px;
 }
 
 .todo-list {
