@@ -13,8 +13,11 @@ const DEFAULT_SETTINGS = {
   theme: 'dark',
   location: null,
   advancedEnabled: false,
-  sunriseOffset: { minutes: 0, direction: 'after' },
-  sunsetOffset: { minutes: 0, direction: 'after' },
+  // 'before' is the first option in the companion app's segmented control
+  // for both, so it's the default direction -- standard segmented-control
+  // behavior is the first item starts selected.
+  sunriseOffset: { minutes: 0, direction: 'before' },
+  sunsetOffset: { minutes: 0, direction: 'before' },
 };
 
 function loadSettings() {
