@@ -295,11 +295,13 @@ body {
      the plain em-based padding, same as the calendar pills. */
   font-size: 22px;
   padding: calc(0.2em + 2px) 0.7em;
-  /* Full stadium shape, not the calendar pills' fixed 15px — a radius
-     this much larger than the box gets clamped by the browser to exactly
-     half the box's actual height, so it's always a true pill regardless
-     of how tall this ends up (single line vs. a wrapped one). */
-  border-radius: 999px;
+  /* Fixed radius, not a %/stadium shape — same idea as the calendar
+     pills' fixed 15px. Computed to be exactly half of this pill's own
+     *single-line* height (1.3em line-height + 2 * this padding + 2 *
+     the 2px border, halved), so a one-line pill still reads as fully
+     rounded — but a pill that wraps to 2-3 lines keeps this same radius
+     instead of ballooning into a taller stadium shape. */
+  border-radius: calc((1.3em + 2 * (0.2em + 2px) + 4px) / 2);
 }
 
 .todo-list {
