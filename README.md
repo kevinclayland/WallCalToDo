@@ -4,6 +4,27 @@ A wall-mounted display (old monitor, portrait orientation, + Raspberry Pi)
 that shows a Google Calendar and a Microsoft To Do list at the same time —
 calendar on top, to-do list on the bottom.
 
+## Why this exists
+
+The point of this project isn't a new to-do app — it's to get a wall
+calendar without giving up the one I already have. My actual calendar and
+to-do list live in the stock iOS apps: Calendar (backed by a Google/Gmail
+account) and Reminders (backed by a Microsoft account, which is what "To
+Do" runs on under the hood). That's genuinely how I organize my life day to
+day, and I didn't want a wall display that meant switching to yet another
+app just so it had something to show.
+
+So instead of inventing its own data model, WallCalToDo reads straight from
+the same accounts my phone already syncs against — the Google Calendar API
+and the Microsoft Graph To Do API — rather than iCloud. Anything I add,
+check off, or move on my phone shows up on the wall, and vice versa,
+because it's the exact same underlying data, not a copy of it. The only
+one-time cost is connecting a Google account in the iOS Mail/Calendar
+settings and a Microsoft account in Reminders' account settings if you
+haven't already — after that, nothing about how you actually use your
+phone changes. The wall display is just another window onto accounts
+you're already keeping up with.
+
 ## How it works
 
 ```
