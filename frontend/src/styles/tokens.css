@@ -43,12 +43,12 @@
 :root,
 :root[data-theme='dark'] {
   --color-bg: #000000;
-  /* Calendar day-cell backgrounds — a normal (in-month) day is slightly
-     lighter than the page background, and a day from the previous/next
-     month blends into it. Light theme (below) deliberately swaps this
-     relationship instead of just inverting these same two values. */
-  --color-cell: #101212;
-  --color-cell-outside: #000000;
+  /* Calendar day-cell backgrounds — an in-month day matches the page
+     background, and a day from the previous/next month is the lighter
+     grey, standing out as "dimmed"/out-of-focus. Same relationship as
+     light theme below, not a naive invert of it. */
+  --color-cell: #000000;
+  --color-cell-outside: #101212;
   --color-text: #f5f5f5;
   /* Softer than pure white — used for the agenda/to-do section body text
      per the mockup; the calendar's month title and day numbers stay pure
@@ -74,10 +74,9 @@
    slightly so they still meet contrast against a white background). */
 :root[data-theme='light'] {
   --color-bg: #ffffff;
-  /* Swapped from dark theme's relationship, not just inverted: an
-     in-month day is white (matching the page/bottom-section background),
-     and a previous/next-month day is the light-grey one — grey reads as
-     "dimmed" against a bright room's white better than the reverse does. */
+  /* Same relationship as dark theme above: an in-month day matches the
+     page/bottom-section background, and a previous/next-month day is
+     the grey one, reading as "dimmed". */
   --color-cell: #ffffff;
   --color-cell-outside: #f4f5f7;
   --color-text: #1a1a1a;
