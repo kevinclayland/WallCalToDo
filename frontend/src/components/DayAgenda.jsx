@@ -11,7 +11,7 @@ const AGENDA_FONT_MIN = 12;
 
 // Always shows *today* — this display has no touch input, so there's no
 // way to select a different day, and none is needed.
-export default function DayAgenda({ events }) {
+export default function DayAgenda({ events, privacyMode }) {
   // `now` needs its own clock, not just a value computed at render time:
   // this component only re-renders when `events` changes, which can be
   // hours between calendar updates. Without a timer, "today" would stay
@@ -67,7 +67,9 @@ export default function DayAgenda({ events }) {
   return (
     <section className="agenda">
       <h2 className="agenda__heading">{heading}</h2>
-      {todayEvents.length === 0 ? (
+      {privacyMode ? (
+        <p className="view__empty">Privacy mode activated</p>
+      ) : todayEvents.length === 0 ? (
         <p className="view__empty">Nothing on the calendar today.</p>
       ) : (
         <ul className="agenda__list" ref={listRef}>

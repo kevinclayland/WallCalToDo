@@ -33,12 +33,14 @@ export default function App() {
     document.documentElement.dataset.theme = effectiveTheme(settings, now);
   }, [settings, now]);
 
+  const privacyMode = Boolean(settings?.privacyMode);
+
   return (
     <div className="app">
-      <CalendarView events={calendar} connected={connected} />
+      <CalendarView events={calendar} connected={connected} privacyMode={privacyMode} />
       <div className="bottom">
-        <DayAgenda events={calendar} />
-        <TodoView tasks={todo} />
+        <DayAgenda events={calendar} privacyMode={privacyMode} />
+        <TodoView tasks={todo} privacyMode={privacyMode} />
       </div>
     </div>
   );

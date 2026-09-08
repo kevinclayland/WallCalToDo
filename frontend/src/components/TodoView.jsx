@@ -4,11 +4,13 @@
 // Checkboxes are purely a visual read/not-read indicator of each item's
 // real completion state — there's no touch input on this display to
 // toggle them.
-export default function TodoView({ tasks }) {
+export default function TodoView({ tasks, privacyMode }) {
   return (
     <section className="todo">
       <h2 className="todo__heading">To Do</h2>
-      {tasks.length === 0 ? (
+      {privacyMode ? (
+        <p className="view__empty">Privacy mode activated</p>
+      ) : tasks.length === 0 ? (
         <p className="view__empty">Nothing on the list.</p>
       ) : (
         <ul className="todo-list">

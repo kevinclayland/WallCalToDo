@@ -12,6 +12,7 @@ const SETTINGS_FILE = 'settings.json';
 const DEFAULT_SETTINGS = {
   theme: 'dark',
   location: null,
+  privacyMode: false,
   advancedEnabled: false,
   // 'before' is the first option in the companion app's segmented control
   // for both, so it's the default direction -- standard segmented-control

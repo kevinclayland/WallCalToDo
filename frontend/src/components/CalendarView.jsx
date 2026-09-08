@@ -26,7 +26,7 @@ const MEASURE_CAP = 12;
 // guessed limit. Re-measures whenever this day's event list changes; a
 // month change also naturally re-measures every cell, since each one is
 // keyed by date and get a fresh mount with the new month's row heights.
-function DayCell({ date, inMonth, isToday, dayEvents, barsSpace, gridRow, gridColumn }) {
+function DayCell({ date, inMonth, isToday, dayEvents, barsSpace, gridRow, gridColumn, privacyMode }) {
   const cappedEvents = dayEvents.slice(0, MEASURE_CAP);
   const listRef = useRef(null);
   // Starts optimistic (all of them) — the effect below measures and trims
@@ -100,10 +100,14 @@ function DayCell({ date, inMonth, isToday, dayEvents, barsSpace, gridRow, gridCo
           <li
             key={event.id}
             className="event-pill calendar-cell__event"
-            title={event.title}
+            title={privacyMode ? undefined : event.title}
             style={{ '--event-color': event.color || 'var(--color-accent)' }}
           >
-            <span className="calendar-cell__event-text">{event.title}</span>
+            {/* Privacy mode: keep the colored pill itself (that's the
+                point — at a glance there's still "something at 2pm"),
+                just never render the title text/tooltip that would
+                say what it is. */}
+            {!privacyMode && <span className="calendar-cell__event-text">{event.title}</span>}
           </li>
         ))}
       </ul>
@@ -126,7 +130,7 @@ function eventDateRange(event) {
   return { start, end };
 }
 
-export default function CalendarView({ events, connected }) {
+export default function CalendarView({ events, connected, privacyMode }) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -243,6 +247,7 @@ export default function CalendarView({ events, connected }) {
               barsSpace={barsSpace}
               gridRow={week + 2}
               gridColumn={(i % 7) + 1}
+              privacyMode={privacyMode}
             />
           );
         })}
@@ -250,7 +255,7 @@ export default function CalendarView({ events, connected }) {
           <div
             key={`${event.id}-${week}`}
             className="event-pill calendar-bar"
-            title={event.title}
+            title={privacyMode ? undefined : event.title}
             style={{
               gridRow: week + 2,
               gridColumn: `${colStart + 1} / ${colEnd + 2}`,
@@ -278,7 +283,7 @@ export default function CalendarView({ events, connected }) {
               '--event-color': event.color || 'var(--color-accent)',
             }}
           >
-            {event.title}
+            {!privacyMode && event.title}
           </div>
         ))}
       </div>

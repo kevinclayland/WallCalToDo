@@ -224,6 +224,21 @@ export default function App() {
     }
   }
 
+  // On the wall display: strips event titles down to just their colored
+  // pills, and swaps the today-agenda and to-do list contents for a
+  // placeholder notice -- their headings stay so the display still reads
+  // as "there's a calendar/to-do here", just not what's on it.
+  async function setPrivacyMode(enabled) {
+    setSettings((prev) => ({ ...prev, privacyMode: enabled })); // optimistic
+    try {
+      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ privacyMode: enabled }) });
+      setSettings(data);
+    } catch (err) {
+      setError(err.message);
+      loadSettings();
+    }
+  }
+
   async function saveLocation(lat, lon, label) {
     setLocationBusy(true);
     try {
@@ -389,6 +404,23 @@ export default function App() {
       </header>
 
       <section className="settings-card">
+        <div className="privacy-toggle">
+          <span className="privacy-toggle__label">Privacy mode</span>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={Boolean(settings?.privacyMode)}
+              disabled={settingsLoading}
+              onChange={(e) => setPrivacyMode(e.target.checked)}
+            />
+            <span className="switch__track" />
+          </label>
+        </div>
+        <p className="privacy-toggle__hint">
+          Hides event titles (only their colored pills stay visible) and replaces today's agenda and the to-do
+          list with a placeholder notice on the wall display.
+        </p>
+
         <div className="segmented" role="group" aria-label="Theme">
           {THEME_OPTIONS.map(({ value, label }) => (
             <button
