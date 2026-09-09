@@ -57,7 +57,11 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin: 0 var(--space-sm) var(--space-xs);
+  /* Right inset is 5px, not --space-sm: it needs to line up exactly
+     with .calendar-header__dot's own 5px-from-the-screen-edge position
+     below, so the clock's last character (the "m" in am/pm) ends up
+     sitting directly under the dot. */
+  margin: 0 5px var(--space-xs) var(--space-sm);
 }
 
 .calendar-header__date {
@@ -81,10 +85,18 @@ body {
 }
 
 .calendar-header__dot {
+  /* Pinned to the physical screen corner (not just its flex container)
+     so "5px from the top, 5px from the right" is exact regardless of
+     any padding/margin elsewhere in the header — those can change
+     later without this drifting off its spec'd position. */
+  position: fixed;
+  top: 5px;
+  right: 5px;
   width: 0.6rem;
   height: 0.6rem;
   border-radius: 50%;
   background: var(--color-offline);
+  z-index: 1;
 }
 
 .calendar-header__dot.is-connected {
@@ -92,7 +104,11 @@ body {
 }
 
 .calendar-header__clock {
-  font-size: 1.75rem;
+  /* Matches the month/year's own font-size (--font-size-title) — no
+     font-weight set here, same as before, so it keeps its existing
+     thin/regular weight rather than picking up the month's bold or
+     the year's light. */
+  font-size: var(--font-size-title);
   color: var(--color-text-muted);
 }
 
