@@ -363,23 +363,25 @@ body {
   font-size: 22px;
 }
 
+/* The checked/unchecked look is now two whole separate SVGs (see
+   TodoView.jsx) instead of one box + a text glyph toggled by
+   .is-completed, so this just sizes/positions whichever one is
+   rendered. Both SVGs use fill/stroke="currentColor", picking up the
+   color set here — same single source of truth the old border/
+   background colors used. */
 .todo-list__checkbox {
-  width: 1.1em;
-  height: 1.1em;
+  /* Matches the icons' own native 18x18 viewBox exactly, rather than an
+     em-derived size that could scale them off their designed proportions. */
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
-  border: 2px solid var(--color-checkbox);
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8em;
-  line-height: 1;
+  color: var(--color-checkbox);
 }
 
-.is-completed .todo-list__checkbox {
-  background: var(--color-checkbox);
-  border-color: var(--color-checkbox);
-  color: #000;
+.todo-list__checkbox svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .todo-list__title {
