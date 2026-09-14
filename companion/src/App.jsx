@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-
-async function api(path, options) {
-  const res = await fetch(`/api${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Request failed (${res.status})`);
-  return res.json();
-}
+import { api } from './api.js';
+import GeneralSettings from './components/GeneralSettings.jsx';
+import GoogleAccounts from './components/GoogleAccounts.jsx';
+import MicrosoftTodo from './components/MicrosoftTodo.jsx';
 
 // Same logic as frontend/src/App.jsx's effectiveTheme() — kept as its own
 // copy here since the two apps are separate Vite builds with nothing
@@ -22,89 +17,6 @@ function effectiveTheme(settings, now) {
   const sunrise = new Date(settings.sunrise);
   const sunset = new Date(settings.sunset);
   return now >= sunrise && now < sunset ? 'light' : 'dark';
-}
-
-// The OAuth redirect URI registered with Google/Microsoft is hardcoded to
-// http://localhost:3000/... (required — both providers only allow plain
-// http:// for the literal loopback address). So the final leg of the
-// connect flow only reaches this server when the browser doing it is
-// running on the Pi itself, at that exact hostname; from any other device
-// (e.g. a phone on the same Wi-Fi, even via this same companion app) it
-// looks like it's working right up through Google/Microsoft's own consent
-// screen, then silently fails on the redirect back. Gate the buttons on
-// that same condition instead of letting it fail confusingly.
-const CAN_ADD_ACCOUNTS = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-
-// Browser geolocation is only available in a secure context (https:, or the
-// localhost/127.0.0.1 exception) — same underlying restriction as the OAuth
-// callback above, different mechanism. Off the Pi's own screen (plain http
-// over the LAN), the API itself won't be there to call.
-const CAN_USE_GEOLOCATION = typeof navigator !== 'undefined' && Boolean(navigator.geolocation) && window.isSecureContext;
-
-const THEME_OPTIONS = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'auto', label: 'Automatic' },
-];
-
-const OFFSET_MINUTES_OPTIONS = [
-  { value: 0, label: 'No delay' },
-  { value: 15, label: '15 min' },
-  { value: 30, label: '30 min' },
-  { value: 45, label: '45 min' },
-  { value: 60, label: '1 hour' },
-  { value: 120, label: '2 hours' },
-  { value: 180, label: '3 hours' },
-];
-
-function formatTime(isoString) {
-  return new Date(isoString).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-}
-
-// One row of the Sunrise/Sunset offset editor: a title showing the
-// already-offset-adjusted time (the actual moment the theme will switch,
-// not the raw astronomical one), a minutes-amount dropdown, and a
-// Before/After segmented control next to it. `offset` is always present
-// (the server defaults it), so this never needs to handle it being unset.
-function SunOffsetRow({ title, time, offset, disabled, onChange }) {
-  // Before/After is meaningless at "No delay" (0 minutes either direction
-  // is the same moment), so disable it rather than leave a control that
-  // does nothing sitting there active.
-  const directionDisabled = disabled || offset.minutes === 0;
-  return (
-    <div className="sun-offset">
-      <p className="sun-offset__title">
-        {title} {time ? formatTime(time) : '—'}
-      </p>
-      <div className="sun-offset__controls">
-        <select
-          className="sun-offset__select"
-          value={offset.minutes}
-          disabled={disabled}
-          onChange={(e) => onChange({ ...offset, minutes: Number(e.target.value) })}
-        >
-          {OFFSET_MINUTES_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <div className="segmented segmented--compact" role="group" aria-label={`${title} timing`}>
-          {['before', 'after'].map((direction) => (
-            <button
-              key={direction}
-              type="button"
-              className={`segmented__option${offset.direction === direction ? ' is-active' : ''}`}
-              disabled={directionDisabled}
-              onClick={() => onChange({ ...offset, direction })}
-            >
-              {direction === 'before' ? 'Before' : 'After'}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function App() {
@@ -124,11 +36,6 @@ export default function App() {
   // be left open, not tick every second.
   const [now, setNow] = useState(() => new Date());
   const [settingsLoading, setSettingsLoading] = useState(true);
-  const [locationBusy, setLocationBusy] = useState(false);
-  const [placeQuery, setPlaceQuery] = useState('');
-  const [placeResults, setPlaceResults] = useState([]);
-  const [placeSearching, setPlaceSearching] = useState(false);
-  const [placeError, setPlaceError] = useState(null);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -180,16 +87,21 @@ export default function App() {
 
   // Matches the companion app's own look to whatever theme is actually
   // active on the wall display -- switching Light/Dark/Automatic here
-  // updates `settings` immediately (see setTheme below), which this picks
-  // straight up.
+  // updates `settings` immediately (see patchSetting below), which this
+  // picks straight up.
   useEffect(() => {
     document.documentElement.dataset.theme = effectiveTheme(settings, now);
   }, [settings, now]);
 
-  async function setTheme(theme) {
-    setSettings((prev) => ({ ...prev, theme })); // optimistic — feels instant
+  // Single implementation shared by every plain settings field below
+  // (theme, sunrise/sunset offsets, advanced toggle, privacy mode):
+  // optimistic local update so the control feels instant, then a PATCH
+  // reconciled against whatever the server actually saved, or rolled back
+  // via a fresh loadSettings() if the request fails.
+  async function patchSetting(patch) {
+    setSettings((prev) => ({ ...prev, ...patch }));
     try {
-      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ theme }) });
+      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify(patch) });
       setSettings(data);
     } catch (err) {
       setError(err.message);
@@ -197,50 +109,25 @@ export default function App() {
     }
   }
 
+  const setTheme = (theme) => patchSetting({ theme });
   // key is 'sunriseOffset' or 'sunsetOffset'.
-  async function setOffset(key, offset) {
-    setSettings((prev) => ({ ...prev, [key]: offset })); // optimistic
-    try {
-      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ [key]: offset }) });
-      setSettings(data);
-    } catch (err) {
-      setError(err.message);
-      loadSettings();
-    }
-  }
-
+  const setOffset = (key, offset) => patchSetting({ [key]: offset });
   // A real on/off for whether sunriseOffset/sunsetOffset apply at all, not
   // just a local show/hide -- off means the theme switches exactly at the
   // real sunrise/sunset regardless of what's saved, on reapplies the saved
   // values without needing to re-enter them.
-  async function setAdvancedEnabled(enabled) {
-    setSettings((prev) => ({ ...prev, advancedEnabled: enabled })); // optimistic
-    try {
-      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ advancedEnabled: enabled }) });
-      setSettings(data);
-    } catch (err) {
-      setError(err.message);
-      loadSettings();
-    }
-  }
-
+  const setAdvancedEnabled = (enabled) => patchSetting({ advancedEnabled: enabled });
   // On the wall display: strips event titles down to just their colored
   // pills, and swaps the today-agenda and to-do list contents for a
   // placeholder notice -- their headings stay so the display still reads
   // as "there's a calendar/to-do here", just not what's on it.
-  async function setPrivacyMode(enabled) {
-    setSettings((prev) => ({ ...prev, privacyMode: enabled })); // optimistic
-    try {
-      const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ privacyMode: enabled }) });
-      setSettings(data);
-    } catch (err) {
-      setError(err.message);
-      loadSettings();
-    }
-  }
+  const setPrivacyMode = (enabled) => patchSetting({ privacyMode: enabled });
 
+  // Unlike the settings above, a location save isn't optimistic (there's no
+  // sensible "local" value to show before the server geocodes/validates
+  // it) and never throws -- LocationSettings owns the busy-state around
+  // this call itself.
   async function saveLocation(lat, lon, label) {
-    setLocationBusy(true);
     try {
       const location = label ? { lat, lon, label } : { lat, lon };
       const data = await api('/settings', { method: 'PATCH', body: JSON.stringify({ location }) });
@@ -248,57 +135,7 @@ export default function App() {
       setError(null);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLocationBusy(false);
     }
-  }
-
-  // Zero-typing option when it's available — but only works in a secure
-  // context (see CAN_USE_GEOLOCATION), so city search below is the one that
-  // works from anywhere, including a phone setting this up over plain LAN
-  // http.
-  function useMyLocation() {
-    setLocationBusy(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        let label;
-        try {
-          label = (await api(`/geocode/reverse?lat=${latitude}&lon=${longitude}`)).label;
-        } catch {
-          // Non-fatal — still save the coordinates, just without a
-          // friendly name to show for them.
-        }
-        saveLocation(latitude, longitude, label);
-      },
-      (err) => {
-        setError(`Couldn't get your location: ${err.message}`);
-        setLocationBusy(false);
-      }
-    );
-  }
-
-  async function searchPlace(e) {
-    e.preventDefault();
-    const q = placeQuery.trim();
-    if (!q) return;
-    setPlaceSearching(true);
-    setPlaceError(null);
-    try {
-      const { results } = await api(`/geocode?q=${encodeURIComponent(q)}`);
-      setPlaceResults(results);
-      if (results.length === 0) setPlaceError("No matches — try a different search.");
-    } catch (err) {
-      setPlaceError(err.message);
-    } finally {
-      setPlaceSearching(false);
-    }
-  }
-
-  function choosePlace(place) {
-    setPlaceResults([]);
-    setPlaceQuery('');
-    saveLocation(place.lat, place.lon, place.label);
   }
 
   async function toggleCalendar(accountId, calendarId, enabled) {
@@ -403,256 +240,36 @@ export default function App() {
         <h1>General settings</h1>
       </header>
 
-      <section className="settings-card">
-        <div className="privacy-toggle">
-          <span className="privacy-toggle__label">Privacy mode</span>
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={Boolean(settings?.privacyMode)}
-              disabled={settingsLoading}
-              onChange={(e) => setPrivacyMode(e.target.checked)}
-            />
-            <span className="switch__track" />
-          </label>
-        </div>
-        <p className="privacy-toggle__hint">
-          Hides event titles (only their colored pills stay visible) and replaces today's agenda and the to-do
-          list with a placeholder notice on the wall display.
-        </p>
+      <GeneralSettings
+        settings={settings}
+        settingsLoading={settingsLoading}
+        onSetPrivacyMode={setPrivacyMode}
+        onSetTheme={setTheme}
+        onSetAdvancedEnabled={setAdvancedEnabled}
+        onSetOffset={setOffset}
+        onSaveLocation={saveLocation}
+        onError={setError}
+      />
 
-        <div className="segmented" role="group" aria-label="Theme">
-          {THEME_OPTIONS.map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              className={`segmented__option${settings?.theme === value ? ' is-active' : ''}`}
-              disabled={settingsLoading}
-              onClick={() => setTheme(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      <GoogleAccounts
+        accounts={accounts}
+        loading={loading}
+        error={error}
+        busyAccountId={busyAccountId}
+        onToggleCalendar={toggleCalendar}
+        onRefreshAccount={refreshAccount}
+        onDisconnectAccount={disconnectAccount}
+      />
 
-        {settings?.theme === 'auto' && (
-          <div className="location-settings">
-            <p className="location-settings__hint">
-              Automatic switches between light and dark at sunrise and sunset for this location.
-            </p>
-
-            {settings.location && (
-              <p className="location-settings__current">
-                Currently set to{' '}
-                <strong>{settings.location.label || `${settings.location.lat.toFixed(2)}, ${settings.location.lon.toFixed(2)}`}</strong>
-              </p>
-            )}
-
-            <form className="location-settings__search" onSubmit={searchPlace}>
-              <input
-                type="text"
-                placeholder="Search for a city"
-                value={placeQuery}
-                onChange={(e) => setPlaceQuery(e.target.value)}
-              />
-              <button type="submit" className="button button--ghost" disabled={placeSearching || !placeQuery.trim()}>
-                Search
-              </button>
-            </form>
-
-            {placeError && <p className="location-settings__error">{placeError}</p>}
-
-            {placeResults.length > 0 && (
-              <ul className="location-settings__results">
-                {placeResults.map((place) => (
-                  <li key={`${place.lat},${place.lon}`}>
-                    <button
-                      type="button"
-                      className="location-settings__result"
-                      disabled={locationBusy}
-                      onClick={() => choosePlace(place)}
-                    >
-                      {place.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {CAN_USE_GEOLOCATION && (
-              <button
-                type="button"
-                className="button button--ghost location-settings__geo"
-                disabled={locationBusy}
-                onClick={useMyLocation}
-              >
-                Use my location instead
-              </button>
-            )}
-
-            {settings.location && (!settings.sunrise || !settings.sunset) && (
-              <p className="location-settings__times">
-                The sun doesn't rise or set today at this location — staying on dark.
-              </p>
-            )}
-
-            <div className="advanced-toggle">
-              <span className="advanced-toggle__label">Advanced</span>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={Boolean(settings.advancedEnabled)}
-                  onChange={(e) => setAdvancedEnabled(e.target.checked)}
-                />
-                <span className="switch__track" />
-              </label>
-            </div>
-
-            {settings.advancedEnabled && settings.location && settings.sunrise && settings.sunset && (
-              <div className="sun-offsets">
-                <SunOffsetRow
-                  title="Sunrise"
-                  time={settings.sunrise}
-                  offset={settings.sunriseOffset}
-                  disabled={settingsLoading}
-                  onChange={(offset) => setOffset('sunriseOffset', offset)}
-                />
-                <SunOffsetRow
-                  title="Sunset"
-                  time={settings.sunset}
-                  offset={settings.sunsetOffset}
-                  disabled={settingsLoading}
-                  onChange={(offset) => setOffset('sunsetOffset', offset)}
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
-      <header className="page__header page__header--section page__header--sub">
-        <h1>Google Calendar</h1>
-        <p className="page__subtitle">Manage which Google calendars show up on the display.</p>
-      </header>
-
-      {error && <p className="banner banner--error">{error}</p>}
-      {loading && <p className="banner">Loading…</p>}
-
-      {!loading && accounts.length === 0 && (
-        <p className="banner">No Google accounts connected yet. Add one below to get started.</p>
-      )}
-
-      <div className="account-list">
-        {accounts.map((account) => (
-          <section key={account.id} className="account-card">
-            <div className="account-card__header">
-              <h2>{account.email}</h2>
-              <div className="account-card__actions">
-                <button
-                  className="button button--ghost"
-                  disabled={busyAccountId === account.id}
-                  onClick={() => refreshAccount(account.id)}
-                >
-                  Refresh calendars
-                </button>
-                <button
-                  className="button button--danger"
-                  disabled={busyAccountId === account.id}
-                  onClick={() => disconnectAccount(account.id, account.email)}
-                >
-                  Disconnect
-                </button>
-              </div>
-            </div>
-
-            <ul className="calendar-list">
-              {account.calendars.map((cal) => (
-                <li key={cal.id} className="calendar-row">
-                  <span className="calendar-row__swatch" style={{ background: cal.backgroundColor || '#888' }} />
-                  <span className="calendar-row__label">{cal.summary}</span>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={cal.enabled}
-                      onChange={(e) => toggleCalendar(account.id, cal.id, e.target.checked)}
-                    />
-                    <span className="switch__track" />
-                  </label>
-                </li>
-              ))}
-              {account.calendars.length === 0 && <li className="calendar-row calendar-row--empty">No calendars found.</li>}
-            </ul>
-          </section>
-        ))}
-      </div>
-
-      {CAN_ADD_ACCOUNTS ? (
-        <a className="button button--primary add-account" href="/auth/google">
-          + Add Google account
-        </a>
-      ) : (
-        <p className="add-account-note">
-          You can only add a new Google account on the Pi's own screen — open{' '}
-          <code>http://localhost:3000/companion</code> there.
-        </p>
-      )}
-
-      <header className="page__header page__header--section page__header--sub">
-        <h1>Microsoft To Do Reminders</h1>
-        <p className="page__subtitle">Choose which lists show up on the display — including ones shared with you.</p>
-      </header>
-
-      {!todoLoading && !msAccount && (
-        <p className="banner">No Microsoft account connected yet. Add one below to get started.</p>
-      )}
-
-      {msAccount && (
-        <section className="account-card">
-          <div className="account-card__header">
-            <h2>{msAccount.email}</h2>
-            <div className="account-card__actions">
-              <button className="button button--ghost" disabled={todoBusy} onClick={refreshTodoLists}>
-                Refresh lists
-              </button>
-              <button
-                className="button button--danger"
-                disabled={todoBusy}
-                onClick={() => disconnectMsAccount(msAccount.email)}
-              >
-                Disconnect
-              </button>
-            </div>
-          </div>
-
-          <ul className="calendar-list">
-            {todoLists.map((list) => (
-              <li key={list.id} className="calendar-row">
-                <span className="calendar-row__label">{list.displayName}</span>
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    checked={list.enabled}
-                    onChange={(e) => toggleTodoList(list.id, e.target.checked)}
-                  />
-                  <span className="switch__track" />
-                </label>
-              </li>
-            ))}
-            {todoLists.length === 0 && <li className="calendar-row calendar-row--empty">No lists found.</li>}
-          </ul>
-        </section>
-      )}
-
-      {CAN_ADD_ACCOUNTS ? (
-        <a className="button button--primary add-account" href="/auth/microsoft">
-          + Connect Microsoft account
-        </a>
-      ) : (
-        <p className="add-account-note">
-          You can only connect a new Microsoft account on the Pi's own screen — open{' '}
-          <code>http://localhost:3000/companion</code> there.
-        </p>
-      )}
+      <MicrosoftTodo
+        todoLists={todoLists}
+        todoLoading={todoLoading}
+        todoBusy={todoBusy}
+        msAccount={msAccount}
+        onToggleTodoList={toggleTodoList}
+        onRefreshTodoLists={refreshTodoLists}
+        onDisconnectMsAccount={disconnectMsAccount}
+      />
     </div>
   );
 }

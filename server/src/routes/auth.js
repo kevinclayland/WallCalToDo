@@ -22,7 +22,7 @@ authRouter.get('/google/callback', async (req, res) => {
     if (changed) broadcast({ type: 'calendar', data: events });
     res.redirect('/companion');
   } catch (err) {
-    res.status(500).send(`Google auth failed: ${err.message}`);
+    res.status(500).json({ error: `Google auth failed: ${err.message}` });
   }
 });
 
@@ -40,6 +40,6 @@ authRouter.get('/microsoft/callback', async (req, res) => {
     if (changed) broadcast({ type: 'todo', data: tasks });
     res.redirect('/companion');
   } catch (err) {
-    res.status(500).send(`Microsoft auth failed: ${err.message}`);
+    res.status(500).json({ error: `Microsoft auth failed: ${err.message}` });
   }
 });
