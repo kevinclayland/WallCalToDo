@@ -177,12 +177,14 @@ export default function CalendarView({ events, connected, privacyMode }) {
 
   // Lay multi-day bars out into stacking "lanes" per week row (greedy:
   // reuse the first lane whose last bar already ended before this one
-  // starts), so overlapping date ranges stack instead of colliding. Every
-  // day in a row reserves the same number of lanes, which keeps that
-  // row's single-day pills starting at a consistent height across all 7
-  // days regardless of which specific days a given bar touches.
+  // starts), so overlapping date ranges stack instead of colliding.
+  // laneCountByCell tracks how many lanes are actually occupied at each
+  // individual day, not the week's max — a day with no bar over it (even
+  // if some other day in the same week has one) reserves no space at
+  // all, instead of every day in the row reserving the row's busiest
+  // day's worth of space for bars that were never above it.
   const bars = [];
-  const laneCountByWeek = new Array(weekCount).fill(0);
+  const laneCountByCell = Array.from({ length: weekCount }, () => new Array(7).fill(0));
   const laneEndByWeek = Array.from({ length: weekCount }, () => []);
   for (const { event, startIdx, endIdx, isRealStart, isRealEnd } of multiDayEvents) {
     const firstWeek = Math.floor(startIdx / 7);
@@ -195,7 +197,9 @@ export default function CalendarView({ events, connected, privacyMode }) {
       let lane = laneEnds.findIndex((endCol) => endCol < colStart);
       if (lane === -1) lane = laneEnds.length;
       laneEnds[lane] = colEnd;
-      laneCountByWeek[week] = Math.max(laneCountByWeek[week], lane + 1);
+      for (let col = colStart; col <= colEnd; col++) {
+        laneCountByCell[week][col] = Math.max(laneCountByCell[week][col], lane + 1);
+      }
       bars.push({
         event,
         week,
@@ -231,7 +235,7 @@ export default function CalendarView({ events, connected, privacyMode }) {
           const key = dateKey(date);
           const week = Math.floor(i / 7);
           const dayEvents = sortDayEvents(singleDayEventsByKey[key] || []);
-          const barsSpace = laneCountByWeek[week] * (BAR_HEIGHT + BAR_GAP);
+          const barsSpace = laneCountByCell[week][i % 7] * (BAR_HEIGHT + BAR_GAP);
           return (
             <DayCell
               // Content-aware, not just the date: this day's own event IDs
