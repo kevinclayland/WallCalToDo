@@ -30,6 +30,15 @@ export default function App() {
   const [todoBusy, setTodoBusy] = useState(false);
   const [msAccount, setMsAccount] = useState(null);
 
+  const [credentials, setCredentials] = useState(null);
+  // Separate from `error` below on purpose: `error` reflects live API call
+  // failures and gets cleared to null the moment any of them next
+  // succeeds (see loadSettings/loadAccounts/loadTodoLists), which raced
+  // with and immediately wiped this out when it shared that same state --
+  // this is a one-off notice about an OAuth attempt that already finished,
+  // so it needs its own lifecycle, cleared only when the user dismisses it.
+  const [authError, setAuthError] = useState(null);
+
   const [settings, setSettings] = useState(null);
   // Its own clock, same pattern as the kiosk display's App.jsx: only needs
   // to catch the sunrise/sunset boundary passing while this page happens to
@@ -74,11 +83,38 @@ export default function App() {
     }
   }, []);
 
+  const loadCredentials = useCallback(async () => {
+    try {
+      setCredentials(await api('/credentials'));
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
+
   useEffect(() => {
     loadAccounts();
     loadTodoLists();
     loadSettings();
-  }, [loadAccounts, loadTodoLists, loadSettings]);
+    loadCredentials();
+  }, [loadAccounts, loadTodoLists, loadSettings, loadCredentials]);
+
+  // The OAuth connect flow is a real page navigation through Google/
+  // Microsoft's own consent screen (see routes/auth.js), not a fetch this
+  // app makes itself -- if it fails before even getting there (credentials
+  // not configured, request rejected), the server sends the browser back
+  // here with the reason in the query string instead of a raw JSON error
+  // page. Surface it once, then clean the URL so a refresh doesn't re-show
+  // a stale error.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get('authError');
+    if (message) {
+      setAuthError(message);
+      params.delete('authError');
+      const query = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : ''));
+    }
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000);
@@ -138,6 +174,17 @@ export default function App() {
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  // provider is 'google' or 'ms'. Throws on failure so ApiCredentialsForm
+  // can show the error inline next to the fields instead of it going to
+  // the shared banner above the account list.
+  async function saveCredentials(provider, { clientId, clientSecret }) {
+    const data = await api(`/credentials/${provider}`, {
+      method: 'PUT',
+      body: JSON.stringify({ clientId, clientSecret }),
+    });
+    setCredentials(data);
   }
 
   async function toggleCalendar(accountId, calendarId, enabled) {
@@ -242,6 +289,24 @@ export default function App() {
         <h1>General settings</h1>
       </header>
 
+      {/* Top-level, not tucked inside whichever section triggered it --
+          errors here can come from Google, Microsoft, or settings, so a
+          single spot at the top is the only one guaranteed to be visible
+          regardless of which one it was. */}
+      {error && <p className="banner banner--error">{error}</p>}
+
+      {/* A failed OAuth redirect (see the authError effect above) --
+          dismissible, since unlike `error` above nothing else clears it
+          automatically. */}
+      {authError && (
+        <p className="banner banner--error">
+          {authError}{' '}
+          <button type="button" className="link-button banner__dismiss" onClick={() => setAuthError(null)}>
+            Dismiss
+          </button>
+        </p>
+      )}
+
       <GeneralSettings
         settings={settings}
         settingsLoading={settingsLoading}
@@ -257,8 +322,9 @@ export default function App() {
       <GoogleAccounts
         accounts={accounts}
         loading={loading}
-        error={error}
         busyAccountId={busyAccountId}
+        credentialsStatus={credentials?.google}
+        onSaveCredentials={(creds) => saveCredentials('google', creds)}
         onToggleCalendar={toggleCalendar}
         onRefreshAccount={refreshAccount}
         onDisconnectAccount={disconnectAccount}
@@ -269,6 +335,8 @@ export default function App() {
         todoLoading={todoLoading}
         todoBusy={todoBusy}
         msAccount={msAccount}
+        credentialsStatus={credentials?.ms}
+        onSaveCredentials={(creds) => saveCredentials('ms', creds)}
         onToggleTodoList={toggleTodoList}
         onRefreshTodoLists={refreshTodoLists}
         onDisconnectMsAccount={disconnectMsAccount}

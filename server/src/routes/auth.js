@@ -9,8 +9,18 @@ export const authRouter = Router();
 
 // These are meant to be visited from a laptop/phone on the same network as
 // the Pi to grant access — the "Add Google Account" button in the
-// companion app links here directly.
-authRouter.get('/google', (req, res) => res.redirect(googleAuth.getAuthUrl()));
+// companion app links here directly. A real page navigation, not a fetch
+// (the browser has to land on Google's own consent screen), so a failure
+// here can't just be a JSON response — send the browser back to the
+// companion app with the reason in the query string instead of hanging or
+// showing a raw JSON error page.
+authRouter.get('/google', (req, res) => {
+  try {
+    res.redirect(googleAuth.getAuthUrl());
+  } catch (err) {
+    res.redirect(`/companion?authError=${encodeURIComponent(err.message)}`);
+  }
+});
 
 authRouter.get('/google/callback', async (req, res) => {
   try {
@@ -22,12 +32,21 @@ authRouter.get('/google/callback', async (req, res) => {
     if (changed) broadcast({ type: 'calendar', data: events });
     res.redirect('/companion');
   } catch (err) {
-    res.status(500).json({ error: `Google auth failed: ${err.message}` });
+    // A real page navigation landing back from Google, not a fetch this
+    // app made itself -- a raw JSON 500 page here (e.g. from a pasted
+    // Client Secret that doesn't match, or an account not added as a test
+    // user yet) reads as the whole thing being broken. Same
+    // redirect-with-reason treatment as the two GET routes above.
+    res.redirect(`/companion?authError=${encodeURIComponent(`Google auth failed: ${err.message}`)}`);
   }
 });
 
 authRouter.get('/microsoft', async (req, res) => {
-  res.redirect(await microsoftAuth.getAuthUrl());
+  try {
+    res.redirect(await microsoftAuth.getAuthUrl());
+  } catch (err) {
+    res.redirect(`/companion?authError=${encodeURIComponent(err.message)}`);
+  }
 });
 
 authRouter.get('/microsoft/callback', async (req, res) => {
@@ -40,6 +59,7 @@ authRouter.get('/microsoft/callback', async (req, res) => {
     if (changed) broadcast({ type: 'todo', data: tasks });
     res.redirect('/companion');
   } catch (err) {
-    res.status(500).json({ error: `Microsoft auth failed: ${err.message}` });
+    // Same reasoning as the Google callback above.
+    res.redirect(`/companion?authError=${encodeURIComponent(`Microsoft auth failed: ${err.message}`)}`);
   }
 });

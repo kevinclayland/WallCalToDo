@@ -2,6 +2,7 @@ import fs from 'fs';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { config } from '../config.js';
 import { dataFilePath, readJson, writeJson } from '../store/fileStore.js';
+import { getCredentials } from '../services/credentialsService.js';
 
 const CACHE_FILE = dataFilePath('msalCache.json');
 const LISTS_FILE = 'msLists.json';
@@ -30,20 +31,35 @@ const cachePlugin = {
 let msalClient = null;
 
 function getClient() {
-  if (!config.ms.clientId || !config.ms.clientSecret) {
-    throw new Error('Microsoft OAuth is not configured — set MS_CLIENT_ID/MS_CLIENT_SECRET in server/.env.');
+  const { clientId, clientSecret } = getCredentials('ms');
+  if (!clientId || !clientSecret) {
+    throw new Error('Microsoft OAuth is not configured — enter a Client ID/Secret in the companion app’s Microsoft To Do section.');
   }
   if (!msalClient) {
     msalClient = new ConfidentialClientApplication({
       auth: {
-        clientId: config.ms.clientId,
+        clientId,
         authority: `https://login.microsoftonline.com/${config.ms.tenantId}`,
-        clientSecret: config.ms.clientSecret,
+        clientSecret,
       },
       cache: { cachePlugin },
     });
   }
   return msalClient;
+}
+
+// The MSAL client above is built once and cached (its constructor needs a
+// real clientId/clientSecret up front) -- call this after saving new
+// credentials through the companion app so the next request rebuilds it
+// with them, instead of keeping whatever it was (or wasn't) built with at
+// server startup.
+export function resetClient() {
+  msalClient = null;
+}
+
+export function isConfigured() {
+  const { clientId, clientSecret } = getCredentials('ms');
+  return Boolean(clientId && clientSecret);
 }
 
 export function getAuthUrl() {
@@ -59,7 +75,7 @@ export async function exchangeCode(code) {
 }
 
 export async function isAuthorized() {
-  if (!config.ms.clientId || !config.ms.clientSecret) return false;
+  if (!isConfigured()) return false;
   const accounts = await getClient().getTokenCache().getAllAccounts();
   return accounts.length > 0;
 }
@@ -67,7 +83,7 @@ export async function isAuthorized() {
 // { email } for the companion app to display, or null if nothing's
 // connected yet — mirrors how each Google account shows its email.
 export async function getConnectedAccount() {
-  if (!config.ms.clientId || !config.ms.clientSecret) return null;
+  if (!isConfigured()) return null;
   const accounts = await getClient().getTokenCache().getAllAccounts();
   return accounts[0] ? { email: accounts[0].username } : null;
 }
@@ -77,7 +93,7 @@ export async function getConnectedAccount() {
 // separately by todoService.dropAllListsCache(), same split as Google's
 // removeAccount()/dropAccountCache() pair.
 export async function disconnectAccount() {
-  if (!config.ms.clientId || !config.ms.clientSecret) return;
+  if (!isConfigured()) return;
   const client = getClient();
   const accounts = await client.getTokenCache().getAllAccounts();
   for (const account of accounts) {

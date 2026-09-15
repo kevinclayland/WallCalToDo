@@ -1,8 +1,42 @@
 import { CAN_ADD_ACCOUNTS } from '../constants.js';
+import ApiCredentialsForm from './ApiCredentialsForm.jsx';
 
-// Google Calendar section: per-account calendar lists with enable toggles,
-// plus connect/refresh/disconnect actions.
-export default function GoogleAccounts({ accounts, loading, error, busyAccountId, onToggleCalendar, onRefreshAccount, onDisconnectAccount }) {
+const GOOGLE_HELP_STEPS = [
+  <>
+    Go to the{' '}
+    <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">
+      Google Cloud Console
+    </a>{' '}
+    and create a project (any name is fine).
+  </>,
+  <>
+    <strong>APIs &amp; Services → Library</strong>, search "Google Calendar API", click <strong>Enable</strong>.
+  </>,
+  <>
+    <strong>APIs &amp; Services → OAuth consent screen</strong>: choose <strong>External</strong>, fill in an app
+    name and your email, save. Under <strong>Test users</strong>, add every Google account you plan to connect.
+  </>,
+  <>
+    <strong>APIs &amp; Services → Credentials → Create Credentials → OAuth client ID</strong>. Application type:{' '}
+    <strong>Web application</strong>.
+  </>,
+];
+
+// Google Calendar section: the credentials this deployment needs before it
+// can connect any account at all, then per-account calendar lists with
+// enable toggles, plus connect/refresh/disconnect actions.
+export default function GoogleAccounts({
+  accounts,
+  loading,
+  busyAccountId,
+  credentialsStatus,
+  onSaveCredentials,
+  onToggleCalendar,
+  onRefreshAccount,
+  onDisconnectAccount,
+}) {
+  const configured = Boolean(credentialsStatus?.configured);
+
   return (
     <>
       <header className="page__header page__header--gap page__header--sub">
@@ -10,7 +44,21 @@ export default function GoogleAccounts({ accounts, loading, error, busyAccountId
         <p className="page__subtitle">Manage which Google calendars show up on the display.</p>
       </header>
 
-      {error && <p className="banner banner--error">{error}</p>}
+      {/* Not rendered until the real status has loaded -- ApiCredentialsForm
+          picks its initial collapsed/expanded state from `status` only
+          once, on mount, so mounting it early with a still-loading
+          `undefined` would leave it stuck expanded even after the real
+          "already configured" status arrives a moment later. */}
+      {credentialsStatus && (
+        <ApiCredentialsForm
+          providerLabel="Google"
+          redirectUri="http://localhost:3000/auth/google/callback"
+          helpSteps={GOOGLE_HELP_STEPS}
+          status={credentialsStatus}
+          onSave={onSaveCredentials}
+        />
+      )}
+
       {loading && <p className="banner">Loading…</p>}
 
       {!loading && accounts.length === 0 && (
@@ -61,7 +109,9 @@ export default function GoogleAccounts({ accounts, loading, error, busyAccountId
         ))}
       </div>
 
-      {CAN_ADD_ACCOUNTS ? (
+      {!configured ? (
+        <p className="add-account-note">Enter your Google API credentials above before connecting an account.</p>
+      ) : CAN_ADD_ACCOUNTS ? (
         <a className="button button--primary add-account" href="/auth/google">
           + Add Google account
         </a>

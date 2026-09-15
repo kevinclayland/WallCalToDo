@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { config } from '../config.js';
 import { readJson, writeJson } from '../store/fileStore.js';
+import { getCredentials } from '../services/credentialsService.js';
 
 const ACCOUNTS_FILE = 'googleAccounts.json';
 // calendar.readonly to read events, userinfo.email so we can label each
@@ -19,10 +20,19 @@ function slugify(email) {
 }
 
 function createClient() {
-  return new google.auth.OAuth2(config.google.clientId, config.google.clientSecret, config.google.redirectUri);
+  const { clientId, clientSecret } = getCredentials('google');
+  return new google.auth.OAuth2(clientId, clientSecret, config.google.redirectUri);
+}
+
+export function isConfigured() {
+  const { clientId, clientSecret } = getCredentials('google');
+  return Boolean(clientId && clientSecret);
 }
 
 export function getAuthUrl() {
+  if (!isConfigured()) {
+    throw new Error('Google OAuth is not configured — enter a Client ID/Secret in the companion app’s Google Calendar section.');
+  }
   return createClient().generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',

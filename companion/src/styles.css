@@ -124,6 +124,12 @@ body {
   color: var(--color-danger-text);
 }
 
+.banner__dismiss {
+  color: inherit;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
 .account-list {
   display: flex;
   flex-direction: column;
@@ -284,6 +290,89 @@ body {
 
 .add-account-note code {
   font-size: 0.85em;
+}
+
+/* Google/Microsoft's own Client ID/Secret for this deployment -- see
+   ApiCredentialsForm.jsx. Sits above the account list/connect button in
+   each of the Google Calendar and Microsoft To Do sections, since that's
+   the credential each of those actually needs. */
+.api-credentials {
+  background: var(--color-well-bg);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.api-credentials__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.api-credentials__header .section-label {
+  margin: 0;
+}
+
+.api-credentials__status {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.link-button {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.api-credentials__help {
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.api-credentials__help summary {
+  cursor: pointer;
+  color: var(--color-accent);
+}
+
+.api-credentials__help ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.api-credentials__help code {
+  font-size: 0.85em;
+}
+
+.api-credentials__help a {
+  color: var(--color-accent);
+}
+
+.api-credentials__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.api-credentials__form input {
+  border: 1px solid var(--color-input-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.9rem;
+  background: var(--color-card-bg);
+  color: var(--color-text);
+}
+
+.api-credentials__form .button {
+  align-self: flex-start;
 }
 
 .settings-card {
