@@ -303,11 +303,14 @@ body {
 }
 
 /* Settings sections below (Location, Theme, Temperature) are each their
-   own labeled setting now, so just spaced apart -- no border lines, same
-   "not over-divided" look the rest of this card already has. */
+   own labeled setting, separated by the same divider line as the one
+   between Privacy mode and Location (.privacy-toggle__hint's own
+   border-bottom). */
 .theme-settings,
 .temperature-settings {
   margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .settings-notice {
@@ -493,7 +496,11 @@ body {
   padding-top: 1rem;
 }
 
+/* A sub-toggle nested under Theme, not its own section -- deliberately
+   lighter than .settings-label/.section-label (Privacy mode, Theme,
+   Temperature), same grey/size as the other hint text in this card. */
 .advanced-toggle__label {
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }

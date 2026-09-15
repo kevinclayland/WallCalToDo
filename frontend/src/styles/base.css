@@ -520,16 +520,18 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 0.25em;
-  /* Matches the legend circles' own 28px height/font-size. */
-  font-size: 28px;
   margin-right: calc(-1 * var(--space-md));
   margin-bottom: calc(-1 * var(--space-sm));
   padding: 0 10px 10px 0;
 }
 
+/* Both locked to the legend circles' own 28px box -- line-height fixes the
+   actual rendered box to 28px regardless of the emoji font's own glyph
+   metrics, rather than just setting font-size and hoping it lines up. */
 .weather__emoji,
 .weather__temp {
-  line-height: 1;
+  font-size: 28px;
+  line-height: 28px;
 }
 
 .weather__temp {
