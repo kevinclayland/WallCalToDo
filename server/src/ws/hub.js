@@ -2,6 +2,7 @@ import { WebSocketServer } from 'ws';
 import { getCachedEvents } from '../services/calendarService.js';
 import { getCachedTasks } from '../services/todoService.js';
 import { getSettings } from '../services/settingsService.js';
+import { getCachedWeather } from '../services/weatherService.js';
 
 const HEARTBEAT_MS = 30000;
 
@@ -21,6 +22,7 @@ export function initWebSocket(server) {
     socket.send(JSON.stringify({ type: 'calendar', data: getCachedEvents() }));
     socket.send(JSON.stringify({ type: 'todo', data: getCachedTasks() }));
     socket.send(JSON.stringify({ type: 'settings', data: getSettings() }));
+    socket.send(JSON.stringify({ type: 'weather', data: getCachedWeather() }));
   });
 
   const heartbeat = setInterval(() => {

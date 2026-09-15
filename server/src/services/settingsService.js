@@ -13,6 +13,9 @@ const DEFAULT_SETTINGS = {
   theme: 'dark',
   location: null,
   privacyMode: false,
+  // 'F' is the first option in the companion app's Temperature segmented
+  // control, matching the usual "first option starts selected" convention.
+  tempUnit: 'F',
   advancedEnabled: false,
   // 'before' is the first option in the companion app's segmented control
   // for both, so it's the default direction -- standard segmented-control

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getSettings, updateSettings } from '../services/settingsService.js';
 import { searchPlaces, reverseGeocode } from '../services/geocodeService.js';
+import { pollWeatherNow } from '../services/poller.js';
 import { broadcast } from '../ws/hub.js';
 
 export const settingsRouter = Router();
@@ -46,7 +47,7 @@ settingsRouter.get('/geocode/reverse', async (req, res) => {
 });
 
 settingsRouter.patch('/settings', (req, res) => {
-  const { theme, location, privacyMode, advancedEnabled, sunriseOffset, sunsetOffset } = req.body || {};
+  const { theme, location, privacyMode, tempUnit, advancedEnabled, sunriseOffset, sunsetOffset } = req.body || {};
   const patch = {};
 
   if (theme !== undefined) {
@@ -63,6 +64,10 @@ settingsRouter.patch('/settings', (req, res) => {
     if (typeof privacyMode !== 'boolean') return res.status(400).json({ error: 'Invalid privacyMode' });
     patch.privacyMode = privacyMode;
   }
+  if (tempUnit !== undefined) {
+    if (!['F', 'C'].includes(tempUnit)) return res.status(400).json({ error: 'Invalid tempUnit' });
+    patch.tempUnit = tempUnit;
+  }
   if (advancedEnabled !== undefined) {
     if (typeof advancedEnabled !== 'boolean') return res.status(400).json({ error: 'Invalid advancedEnabled' });
     patch.advancedEnabled = advancedEnabled;
@@ -78,5 +83,9 @@ settingsRouter.patch('/settings', (req, res) => {
 
   const settings = updateSettings(patch);
   broadcast({ type: 'settings', data: settings });
+  // Fire-and-forget: don't make the companion app wait on a weather fetch
+  // just to save a location, and don't make someone who just set one up
+  // wait up to 15 minutes for the poll loop to get around to it either.
+  if (patch.location) pollWeatherNow(patch.location.lat, patch.location.lon);
   res.json(settings);
 });
