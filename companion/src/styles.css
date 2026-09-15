@@ -298,8 +298,22 @@ body {
   font-size: 0.9rem;
 }
 
-.theme-label {
+.section-label {
   margin: 0 0 0.5rem;
+}
+
+/* Settings sections below (Location, Theme, Temperature) are each their
+   own labeled setting now, so just spaced apart -- no border lines, same
+   "not over-divided" look the rest of this card already has. */
+.theme-settings,
+.temperature-settings {
+  margin-top: 1rem;
+}
+
+.settings-notice {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
 }
 
 .privacy-toggle__hint {
@@ -342,12 +356,14 @@ body {
 }
 
 .location-settings {
-  /* No border here -- theme (the segmented control above) and location
-     are really one setting (Automatic just has more configuration to
-     it), not two separate sections that need a divider between them.
-     Only the privacy toggle above gets its own separator. */
   margin-top: 1rem;
-  padding-top: 1rem;
+}
+
+/* The auto-theme-only block nested inside ThemeSettings (the "sun doesn't
+   rise" notice, Advanced toggle, and sunrise/sunset offset rows) -- no
+   border, same "just spaced apart" look as the sections above. */
+.theme-auto-settings {
+  margin-top: 1rem;
 }
 
 .location-settings__hint {

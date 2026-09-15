@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { api } from '../api.js';
-import SunOffsetRow from './SunOffsetRow.jsx';
 
 // Browser geolocation is only available in a secure context (https:, or the
 // localhost/127.0.0.1 exception) — same underlying restriction as the OAuth
@@ -8,13 +7,14 @@ import SunOffsetRow from './SunOffsetRow.jsx';
 // over the LAN), the API itself won't be there to call.
 const CAN_USE_GEOLOCATION = typeof navigator !== 'undefined' && Boolean(navigator.geolocation) && window.isSecureContext;
 
-// The location + sunrise/sunset half of Automatic theme mode — only ever
-// rendered when settings.theme === 'auto' (see GeneralSettings), so
-// `settings` here is guaranteed non-null. Owns all of its own UI-local
-// state (search box, results, busy flags); the only things that need to
-// reach back up to the shared settings object are the on* callbacks
-// App.jsx supplies.
-export default function LocationSettings({ settings, settingsLoading, onSaveLocation, onSetAdvancedEnabled, onSetOffset, onError }) {
+// The Pi's own physical location -- shared by Automatic theme (sunrise/
+// sunset switching) and the outside-temperature display, which is why this
+// is its own standalone section rather than nested under either one.
+// Always rendered, unlike before, when it only showed up under theme ===
+// 'auto'. Owns all of its own UI-local state (search box, results, busy
+// flags); the only thing that needs to reach back up to the shared
+// settings object is onSaveLocation, which App.jsx supplies.
+export default function LocationSettings({ settings, onSaveLocation, onError }) {
   const [locationBusy, setLocationBusy] = useState(false);
   const [placeQuery, setPlaceQuery] = useState('');
   const [placeResults, setPlaceResults] = useState([]);
@@ -84,11 +84,10 @@ export default function LocationSettings({ settings, settingsLoading, onSaveLoca
 
   return (
     <div className="location-settings">
-      <p className="location-settings__hint">
-        Automatic switches between light and dark at sunrise and sunset for this location.
-      </p>
+      <p className="settings-label section-label">Location</p>
+      <p className="location-settings__hint">Used for Automatic theme switching and the outside temperature.</p>
 
-      {settings.location && (
+      {settings?.location && (
         <p className="location-settings__current">
           Currently set to{' '}
           <strong>{settings.location.label || `${settings.location.lat.toFixed(2)}, ${settings.location.lon.toFixed(2)}`}</strong>
@@ -135,43 +134,6 @@ export default function LocationSettings({ settings, settingsLoading, onSaveLoca
         >
           Use my location instead
         </button>
-      )}
-
-      {settings.location && (!settings.sunrise || !settings.sunset) && (
-        <p className="location-settings__times">
-          The sun doesn't rise or set today at this location — staying on dark.
-        </p>
-      )}
-
-      <div className="advanced-toggle">
-        <span className="advanced-toggle__label">Advanced</span>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={Boolean(settings.advancedEnabled)}
-            onChange={(e) => onSetAdvancedEnabled(e.target.checked)}
-          />
-          <span className="switch__track" />
-        </label>
-      </div>
-
-      {settings.advancedEnabled && settings.location && settings.sunrise && settings.sunset && (
-        <div className="sun-offsets">
-          <SunOffsetRow
-            title="Sunrise"
-            time={settings.sunrise}
-            offset={settings.sunriseOffset}
-            disabled={settingsLoading}
-            onChange={(offset) => onSetOffset('sunriseOffset', offset)}
-          />
-          <SunOffsetRow
-            title="Sunset"
-            time={settings.sunset}
-            offset={settings.sunsetOffset}
-            disabled={settingsLoading}
-            onChange={(offset) => onSetOffset('sunsetOffset', offset)}
-          />
-        </div>
       )}
     </div>
   );

@@ -1,13 +1,9 @@
 import LocationSettings from './LocationSettings.jsx';
+import ThemeSettings from './ThemeSettings.jsx';
+import TemperatureSettings from './TemperatureSettings.jsx';
 
-const THEME_OPTIONS = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'auto', label: 'Automatic' },
-];
-
-// Privacy mode + theme, plus (only in Automatic mode) the location/
-// sunrise-sunset controls that theme needs.
+// Privacy, then location (shared by theme and temperature below, so it
+// comes before both), then theme, then temperature units.
 export default function GeneralSettings({
   settings,
   settingsLoading,
@@ -15,6 +11,7 @@ export default function GeneralSettings({
   onSetTheme,
   onSetAdvancedEnabled,
   onSetOffset,
+  onSetTempUnit,
   onSaveLocation,
   onError,
 }) {
@@ -37,31 +34,17 @@ export default function GeneralSettings({
         list with a placeholder notice on the wall display.
       </p>
 
-      <p className="settings-label theme-label">Theme</p>
-      <div className="segmented" role="group" aria-label="Theme">
-        {THEME_OPTIONS.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            className={`segmented__option${settings?.theme === value ? ' is-active' : ''}`}
-            disabled={settingsLoading}
-            onClick={() => onSetTheme(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <LocationSettings settings={settings} onSaveLocation={onSaveLocation} onError={onError} />
 
-      {settings?.theme === 'auto' && (
-        <LocationSettings
-          settings={settings}
-          settingsLoading={settingsLoading}
-          onSaveLocation={onSaveLocation}
-          onSetAdvancedEnabled={onSetAdvancedEnabled}
-          onSetOffset={onSetOffset}
-          onError={onError}
-        />
-      )}
+      <ThemeSettings
+        settings={settings}
+        settingsLoading={settingsLoading}
+        onSetTheme={onSetTheme}
+        onSetAdvancedEnabled={onSetAdvancedEnabled}
+        onSetOffset={onSetOffset}
+      />
+
+      <TemperatureSettings settings={settings} settingsLoading={settingsLoading} onSetTempUnit={onSetTempUnit} />
     </section>
   );
 }

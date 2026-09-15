@@ -122,6 +122,8 @@ export default function App() {
   // placeholder notice -- their headings stay so the display still reads
   // as "there's a calendar/to-do here", just not what's on it.
   const setPrivacyMode = (enabled) => patchSetting({ privacyMode: enabled });
+  // 'F' or 'C' -- which unit the outside-temperature display uses.
+  const setTempUnit = (tempUnit) => patchSetting({ tempUnit });
 
   // Unlike the settings above, a location save isn't optimistic (there's no
   // sensible "local" value to show before the server geocodes/validates
@@ -247,6 +249,7 @@ export default function App() {
         onSetTheme={setTheme}
         onSetAdvancedEnabled={setAdvancedEnabled}
         onSetOffset={setOffset}
+        onSetTempUnit={setTempUnit}
         onSaveLocation={saveLocation}
         onError={setError}
       />
