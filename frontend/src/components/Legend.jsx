@@ -2,9 +2,10 @@
 // overrides actually in use within it (Google Calendar's "change color of
 // this event" option) -- one letter-circle per calendar (its own default
 // color, labeled with the calendar's first letter), with any override
-// colors seen among its events stacked behind it (left-to-right) as plain
-// color swatches, each peeking out STACK_OFFSET to the right of the one
-// in front of it.
+// colors seen among its events stacked to its left as plain color
+// swatches: the one furthest back (lowest in the stack, most covered)
+// comes first/leftmost, on up through the main circle last/rightmost,
+// which stays on top so its letter is always fully legible.
 const CIRCLE_SIZE = 28;
 const STACK_OFFSET = 7;
 
@@ -51,10 +52,13 @@ export default function Legend({ events }) {
             <span
               key={color}
               className="event-pill legend__circle"
-              style={{ '--event-color': color, left: (i + 1) * STACK_OFFSET }}
+              style={{ '--event-color': color, left: i * STACK_OFFSET }}
             />
           ))}
-          <span className="event-pill legend__circle legend__circle--main" style={{ '--event-color': group.mainColor }}>
+          <span
+            className="event-pill legend__circle legend__circle--main"
+            style={{ '--event-color': group.mainColor, left: group.secondaryColors.length * STACK_OFFSET }}
+          >
             {group.label.charAt(0).toUpperCase()}
           </span>
         </div>

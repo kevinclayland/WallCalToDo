@@ -396,16 +396,28 @@ body {
 
 .legend__circle {
   /* Stacked via position: absolute within .legend__group instead of
-     side by side — left is 0 here (the front/main circle) and
-     overridden per secondary circle in Legend.jsx (7px further back
-     each, left-to-right), so each one peeks out just past the right
-     edge of the circle in front of it. */
+     side by side — each circle's own `left` (set inline in Legend.jsx)
+     places it 7px further right than the one before it, so each one
+     peeks out just past the right edge of the circle behind it. */
   position: absolute;
-  left: 0;
   bottom: 0;
   width: 28px;
   height: 28px;
   border-radius: 50%;
+  /* .event-pill's own background is a transparent tint -- fine for a
+     pill sitting on its own, but these circles deliberately overlap
+     each other, and two stacked transparent tints blend into a muddy
+     color in the overlap instead of each circle reading as its own
+     clean color. A solid backing layer (the page's own background —
+     black in dark mode) under the same tint fixes that: each circle
+     fully occludes whatever's behind it first, then tints on top of
+     its own opaque backing, the same as it would look sitting alone. */
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--event-color, var(--color-accent)) 30%, transparent),
+      color-mix(in srgb, var(--event-color, var(--color-accent)) 30%, transparent)
+    ),
+    var(--color-bg);
 }
 
 .legend__circle--main {
