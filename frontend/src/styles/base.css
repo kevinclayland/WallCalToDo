@@ -377,7 +377,6 @@ body {
 .legend {
   flex-shrink: 0;
   display: flex;
-  align-items: flex-end;
   gap: 5px;
   /* Bleeds through .agenda's own padding on these two sides so the
      circles land at an exact 10px inset from the panel's actual corner
@@ -391,15 +390,16 @@ body {
 
 .legend__group {
   position: relative;
-  width: 28px;
+  height: 28px;
   flex-shrink: 0;
 }
 
 .legend__circle {
   /* Stacked via position: absolute within .legend__group instead of
-     side by side — bottom is 0 here (the front/main circle) and
+     side by side — left is 0 here (the front/main circle) and
      overridden per secondary circle in Legend.jsx (7px further back
-     each), so each one peeks out just above the circle in front of it. */
+     each, left-to-right), so each one peeks out just past the right
+     edge of the circle in front of it. */
   position: absolute;
   left: 0;
   bottom: 0;
