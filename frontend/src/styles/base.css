@@ -238,6 +238,10 @@ body {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  /* Text sits visually high within the pill despite being flex-centered
+     (font ascender/descender weighting, not a layout bug) — nudged down
+     a literal 1px rather than fighting the centering math over it. */
+  transform: translateY(1px);
 }
 
 .calendar-cell__more {
@@ -263,6 +267,10 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Same 1px-too-high text fix as .calendar-cell__event-text -- no
+     separate text element here to target, so the nudge (imperceptible
+     at 1px) applies to the whole bar instead. */
+  transform: translateY(1px);
 }
 
 /* ---------- Bottom section: today's agenda + to-do ---------- */
@@ -367,6 +375,8 @@ body {
      with the rest of the row on a packed day. +2px top and bottom over
      the plain em-based padding, same as the calendar pills. */
   padding: calc(0.2em + 2px) 0.7em;
+  /* Same 1px-too-high text fix as the calendar pills. */
+  transform: translateY(1px);
   /* Fixed radius, not a %/stadium shape — same idea as the calendar
      pills' fixed 15px. Computed to be exactly half of this pill's own
      *single-line* height (1.3em line-height + 2 * this padding + 2 *
