@@ -125,6 +125,12 @@ doesn't take effect.
 A separate small app (`companion/`) served at `/companion` lets you manage
 the calendar side from your phone or laptop, on the same Wi-Fi as the Pi:
 
+- **API credentials** — each of the Google Calendar and Microsoft To Do
+  sections has its own Client ID/Client Secret form, with a "Where do I
+  get this?" panel that walks through creating your own free API
+  credentials in that provider's console. No terminal/`.env` editing
+  required (see the setup guide's step 7 below for screenshots) — this is
+  the one thing about each provider that only needs to be entered once.
 - **Add a Google account** — tapping the button starts the normal Google
   OAuth flow; you can connect as many Google accounts as you want (e.g.
   personal + work). Reconnecting an account you've already added updates
@@ -164,7 +170,7 @@ the house, put something like Tailscale on the Pi rather than exposing it
 publicly.
 
 **Connecting a new account has to happen on the Pi's own screen**, not
-from your phone — see step 8 of the setup guide below for why. Everyday
+from your phone — see step 7 of the setup guide below for why. Everyday
 use of the companion app (toggling calendars, disconnecting an account)
 works fine from your phone once accounts are already connected.
 
@@ -248,48 +254,19 @@ node -v   # should print v20.x — if it doesn't, something above failed
 
 `fonts-noto-color-emoji` isn't always preinstalled on Raspberry Pi OS — without it, an emoji in an event title (from Google Calendar) shows up on the display as a blank box instead of the actual emoji. If you're seeing that on a Pi set up before this was added, just run that one `apt install` line and restart the kiosk (`sudo systemctl restart wallcaltodo` doesn't touch Chromium — reboot, or re-run `kiosk.sh`, to pick up the new font).
 
-### 4. Create your OAuth credentials
-
-This is the fiddliest part, but it's a one-time setup in each provider's
-developer console.
-
-**Google:**
-1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and create a new project (top-left project switcher → New Project).
-2. **APIs & Services → Library**, search "Google Calendar API", click **Enable**.
-3. **APIs & Services → OAuth consent screen**: choose **External**, fill in an app name and your email, save. Under **Test users**, add every Google account you plan to connect (the app stays unpublished/personal-use, so only listed test users can sign in).
-4. **APIs & Services → Credentials → Create Credentials → OAuth client ID**. Application type: **Web application**. Under **Authorized redirect URIs**, add exactly:
-   ```
-   http://localhost:3000/auth/google/callback
-   ```
-   (It has to be `localhost`, not the Pi's hostname/IP — Google only allows plain `http://` for the literal loopback address. This is why account-connecting happens on the Pi's own screen in step 8, not from your phone.)
-5. Save, then copy the **Client ID** and **Client Secret** — you'll paste these into `.env` in step 5.
-
-**Microsoft:**
-1. Go to [portal.azure.com](https://portal.azure.com/) → **App registrations → New registration**.
-2. Name it anything. Under **Redirect URI**, choose platform **Web** and enter:
-   ```
-   http://localhost:3000/auth/microsoft/callback
-   ```
-   (Same `localhost`-only restriction as Google.)
-3. After creating it, go to **Certificates & secrets → New client secret**, create one, and copy its **value** immediately (it's hidden after you leave the page).
-4. Go to **API permissions → Add a permission → Microsoft Graph → Delegated permissions**, search for and add `Tasks.Read`.
-5. Copy the **Application (client) ID** from the app's Overview page.
-
-### 5. Get the code onto the Pi and configure it
+### 4. Get the code onto the Pi
 
 ```
 git clone https://github.com/kevinclayland/WallCalToDo.git
 cd WallCalToDo
 cp server/.env.example server/.env
-nano server/.env
 ```
 
-Fill in `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MS_CLIENT_ID`, and
-`MS_CLIENT_SECRET` with the values from step 4 (leave the `*_REDIRECT_URI`
-lines as they already are). Save and exit nano with `Ctrl+O`, `Enter`,
-`Ctrl+X`.
+That's it for `.env` — it only holds things like the port and poll
+interval now. Your Google/Microsoft credentials get entered through the
+companion app itself in step 7 below, not by hand-editing a file.
 
-### 6. Install dependencies and build both apps
+### 5. Install dependencies and build both apps
 
 ```
 cd ~/WallCalToDo/server && npm install
@@ -299,7 +276,7 @@ cd ~/WallCalToDo/companion && npm install && npm run build
 
 This takes a few minutes on a Pi — that's normal.
 
-### 7. Run the backend as a background service
+### 6. Run the backend as a background service
 
 ```
 sudo cp ~/WallCalToDo/pi-setup/wallcaltodo.service /etc/systemd/system/
@@ -308,33 +285,59 @@ sudo systemctl status wallcaltodo
 ```
 
 The status output should say **active (running)**. If it doesn't, run
-`sudo journalctl -u wallcaltodo -n 50` to see why — the most common cause
-is a typo in `server/.env`.
+`sudo journalctl -u wallcaltodo -n 50` to see why.
 
-### 8. Connect your accounts
+### 7. Connect your accounts
 
 Do this step on the Pi's own screen (i.e. with a keyboard/mouse on the
 monitor connected to the Pi, in its normal desktop — not kiosk mode yet,
-and not from your phone). This is required because the redirect URLs
-registered in step 4 are `localhost`-only, which only means something to
-a browser running on the Pi itself.
+and not from your phone). This is required because the redirect URLs each
+provider needs are `localhost`-only, which only means something to a
+browser running on the Pi itself — see "Companion app" above for why.
 
 1. Open the Pi's Chromium (Menu → Internet → Chromium) and go to:
    ```
    http://localhost:3000/companion
    ```
-2. Tap **+ Add Google account**, sign in, grant access. Repeat for every
-   Google account you want on the display.
-3. Visit `http://localhost:3000/auth/microsoft` once to connect your
-   Microsoft To Do account.
-4. Back in the companion app, you should see each account listed with its
-   calendars — toggle any off you don't want shown.
+2. Scroll to **Google Calendar**. Click **Where do I get this?** to
+   expand the steps for creating your own free Google API credentials —
+   it walks you through the Google Cloud Console and tells you exactly
+   what to paste in:
+
+   ![Google Calendar section of the companion app, showing the expanded "Where do I get this?" steps and the Client ID/Client Secret fields](docs/setup-google-credentials.png)
+
+   Paste the **Client ID** and **Client Secret** it gives you into the two
+   fields and click **Save**.
+3. The section now shows **Configured**, and a **+ Add Google account**
+   button appears. Tap it, sign in, grant access. Repeat for every Google
+   account you want on the display. Each connected account shows its
+   calendars with a toggle for each one:
+
+   ![A connected Google account in the companion app, showing its calendar list with per-calendar toggles](docs/setup-google-connected.png)
+
+4. Scroll to **Microsoft To Do Reminders** and do the same thing — expand
+   **Where do I get this?**, follow the Azure Portal steps, paste in the
+   Client ID/Secret it gives you, Save:
+
+   ![Microsoft To Do Reminders section of the companion app, showing the expanded "Where do I get this?" steps and the Client ID/Client Secret fields](docs/setup-microsoft-credentials.png)
+
+5. Tap **+ Connect Microsoft account** and sign in.
+
+If anything about a connection attempt fails (wrong secret, an account
+that isn't added as a Google test user yet, etc.), the companion app shows
+the reason in a banner at the top of the page instead of a blank/broken
+screen — fix whatever it says and try again.
 
 Then check `http://localhost:3000` in that same browser — you should see
 your real events/tasks. If it's empty, give it a minute (it polls every
 60 seconds by default) and check `sudo journalctl -u wallcaltodo -f`.
 
-### 9. Rotate the display and enable kiosk mode
+<sub>Prefer editing a file over a web form? `server/.env` still accepts
+`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`MS_CLIENT_ID`/`MS_CLIENT_SECRET`
+as a fallback — whatever's saved through the companion app just takes
+priority over them.</sub>
+
+### 8. Rotate the display and enable kiosk mode
 
 Follow **`pi-setup/kiosk/README.md`** — it covers rotating the display to
 portrait and setting Chromium to auto-launch full-screen on boot,
@@ -349,7 +352,7 @@ sudo reboot
 The Pi should come back up straight into the full-screen display, already
 rotated to portrait.
 
-### 10. Mount it
+### 9. Mount it
 
 Physically attach the monitor to the Pi and mount both on the wall.
 You're done — from here on, changes to your calendars show up
@@ -361,7 +364,7 @@ From your phone, on the same Wi-Fi, open
 `http://wallcaltodo.local:3000/companion` (swap in your own hostname) to
 toggle calendars or disconnect an account — this works fine from your
 phone. **Adding a brand-new account** still has to be done on the Pi's own
-screen, same as step 8 (or via an SSH tunnel — `ssh -L 3000:localhost:3000 pi@wallcaltodo.local`,
+screen, same as step 7 (or via an SSH tunnel — `ssh -L 3000:localhost:3000 pi@wallcaltodo.local`,
 then open `http://localhost:3000/companion` on your laptop through the
 tunnel — if you'd rather not walk over to the Pi).
 
@@ -371,8 +374,10 @@ tunnel — if you'd rather not walk over to the Pi).
   device supports `.local` mDNS names. Find the Pi's IP instead: SSH in
   and run `hostname -I`, then use `http://<that-ip>:3000/companion`.
 - **Backend won't start** — `sudo systemctl status wallcaltodo` and
-  `sudo journalctl -u wallcaltodo -n 50` for the actual error. Usually a
-  missing/wrong value in `server/.env`.
+  `sudo journalctl -u wallcaltodo -n 50` for the actual error.
+- **Google/Microsoft connect fails** — the companion app shows the reason
+  in a banner at the top of the page (wrong Client Secret, an account not
+  added as a Google test user yet, etc.) rather than leaving you guessing.
 - **Kiosk screen is blank or shows a desktop instead of the app** — SSH in
   and run `pi-setup/kiosk/kiosk.sh` by hand to see its output directly,
   and double check the autostart file syntax in `pi-setup/kiosk/README.md`.
@@ -396,9 +401,10 @@ whatever port Vite picks next (check its terminal output) — both proxy
 `/api` and `/auth` calls to the backend on `:3000` (the kiosk app also
 proxies `/ws`, since it's the one that needs the live WebSocket push; the
 companion app doesn't use it). Since everything's on `localhost` here, the
-OAuth connect step just works directly: open the companion app and use
-**+ Add Google account**, and
-visit `http://localhost:3000/auth/microsoft` once for Microsoft.
+OAuth connect step just works directly: open the companion app, enter your
+Google/Microsoft API credentials in their respective sections (see step 7
+of the setup guide above if you haven't created those yet), then use
+**+ Add Google account** / **+ Connect Microsoft account**.
 
 To preview the kiosk's portrait layout on a normal monitor, just shrink
 the browser window narrow — no special flag needed.
