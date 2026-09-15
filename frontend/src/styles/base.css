@@ -525,15 +525,20 @@ body {
   padding: 0 10px 10px 0;
 }
 
-/* Both locked to the legend circles' own 28px box -- line-height fixes the
-   actual rendered box to 28px regardless of the emoji font's own glyph
-   metrics, rather than just setting font-size and hoping it lines up. */
-.weather__emoji,
-.weather__temp {
-  font-size: 28px;
+/* Emoji glyphs render taller than their own font-size (a 28px emoji can
+   draw ink up to ~33px tall, well past the legend circles' 28px box) --
+   24px keeps every glyph this widget ever shows (weather icons, moon
+   phases, the air-quality mask) at or under a 28px-tall drawn glyph,
+   measured directly off their canvas ink bounds rather than guessed.
+   line-height 28px on both keeps the emoji and the temperature on the
+   same row height/baseline despite the differing font-size. */
+.weather__emoji {
+  font-size: 24px;
   line-height: 28px;
 }
 
 .weather__temp {
+  font-size: 28px;
+  line-height: 28px;
   font-weight: 600;
 }
