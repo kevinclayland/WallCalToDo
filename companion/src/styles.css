@@ -336,9 +336,12 @@ body {
 }
 
 .location-settings {
+  /* No border here -- theme (the segmented control above) and location
+     are really one setting (Automatic just has more configuration to
+     it), not two separate sections that need a divider between them.
+     Only the privacy toggle above gets its own separator. */
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--color-border-subtle);
 }
 
 .location-settings__hint {
@@ -459,12 +462,13 @@ body {
 }
 
 .advanced-toggle {
+  /* Same reasoning as .location-settings above -- still the same theme
+     setting, just more of its configuration, so no divider here either. */
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--color-border-subtle);
 }
 
 .advanced-toggle__label {
