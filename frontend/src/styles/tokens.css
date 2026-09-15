@@ -61,8 +61,9 @@
   --color-offline: #ff0000;
   /* Fixed "today" marker color — deliberately independent of any
      calendar's own color, so today always reads the same regardless of
-     what's on the schedule. */
-  --color-today: #ff0000;
+     what's on the schedule. Darker than pure red for readability behind
+     the white day number. */
+  --color-today: #d60000;
   --color-checkbox: #49454f;
   /* Event pill text (.event-pill) — white reads reliably against the dark
      background showing through the pill's tinted fill. */
@@ -86,7 +87,7 @@
   --color-border: #e2e4e8;
   --color-online: #16a34a;
   --color-offline: #dc2626;
-  --color-today: #dc2626;
+  --color-today: #d60000;
   --color-checkbox: #9aa0a6;
   /* Dark text instead of white — the pill's tinted fill is now a light
      tint over a white/near-white background, so dark text is what reads
