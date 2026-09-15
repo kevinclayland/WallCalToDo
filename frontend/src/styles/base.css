@@ -457,17 +457,34 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  /* em, not --space-xs: scales down with the row text on a packed list
+     (see --todo-font-size below) instead of staying a fixed gap that eats
+     into the very room the shrink is trying to reclaim. Same reasoning as
+     .agenda__list's own gap. */
+  gap: 0.35em;
   flex: 1;
   min-height: 0;
+  /* Fallback only: TodoView.jsx shrinks --todo-font-size until content
+     fits without this ever needing to scroll (this display has no touch/
+     scroll input), down to the same floor DayAgenda.jsx uses -- this only
+     kicks in if that floor still isn't enough, which shouldn't happen in
+     practice. */
   overflow-y: auto;
+  /* Single control point for the whole row's scale -- checkbox size and
+     the due-date line both size off of it in em, so setting this one
+     variable (from TodoView.jsx) scales a row the same way growing/
+     shrinking the design's base font would. Same pattern as
+     .agenda__list's --agenda-font-size. */
+  font-size: var(--todo-font-size, 22px);
 }
 
 .todo-list__item {
   display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  font-size: 22px;
+  /* flex-start, not center: a row with a due date is now two lines, and
+     centering would pull the checkbox down between them instead of
+     lining it up with the title on the first line. */
+  align-items: flex-start;
+  gap: 0.5em;
 }
 
 /* The checked/unchecked look is now two whole separate SVGs (see
@@ -475,13 +492,16 @@ body {
    .is-completed, so this just sizes/positions whichever one is
    rendered. Both SVGs use fill/stroke="currentColor", picking up the
    color set here — same single source of truth the old border/
-   background colors used. */
+   background colors used. Sized in em (matches its 18px-at-22px design
+   ratio) so it shrinks along with the rest of the row on a packed list,
+   instead of staying fixed while the text around it shrinks. */
 .todo-list__checkbox {
-  /* Matches the icons' own native 18x18 viewBox exactly, rather than an
-     em-derived size that could scale them off their designed proportions. */
-  width: 18px;
-  height: 18px;
+  width: 0.82em;
+  height: 0.82em;
   flex-shrink: 0;
+  /* Optically centers the icon against the title's cap-height on the
+     first line now that align-items is flex-start instead of center. */
+  margin-top: 0.15em;
   color: var(--color-checkbox);
 }
 
@@ -491,8 +511,11 @@ body {
   display: block;
 }
 
-.todo-list__title {
+.todo-list__body {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .is-completed .todo-list__title {
@@ -501,7 +524,11 @@ body {
 }
 
 .todo-list__due {
-  font-size: 0.75em;
+  /* Directly under the title, in a small font -- its own line rather
+     than sharing the title's, so a long title and a due date never
+     fight for the same row width. */
+  margin-top: 0.2em;
+  font-size: 0.6em;
   color: var(--color-text-muted);
 }
 

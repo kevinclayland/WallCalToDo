@@ -71,3 +71,11 @@ export function formatClock(date) {
   hours = hours % 12 || 12;
   return `${hours}:${minutes} ${period}`;
 }
+
+// "9/15/26" — numeric month/day, 2-digit year to save space on a to-do
+// row. Same reasoning as formatClock: spelled out by hand instead of
+// toLocaleDateString() so the format is exact and doesn't drift by locale.
+export function formatShortDate(date) {
+  const year = String(date.getFullYear()).slice(-2);
+  return `${date.getMonth() + 1}/${date.getDate()}/${year}`;
+}
