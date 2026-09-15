@@ -106,6 +106,23 @@ export function dropAllListsCache() {
   saveSync({});
 }
 
+// Weekly tidy-up (see poller.js's Monday check) -- drops completed tasks
+// from the local cache only, never touches the real task in Microsoft To
+// Do. Safe to do this way: the sync token keeps advancing from where it
+// left off, so a task removed here reappears on its own the moment it's
+// touched again in Microsoft (completed toggled back off, edited, etc.)
+// shows up as a change on the next delta poll, same as any other edit.
+export function clearCompletedTasks() {
+  const cache = loadTasks();
+  for (const entries of Object.values(cache)) {
+    for (const [id, task] of Object.entries(entries)) {
+      if (task.completed) delete entries[id];
+    }
+  }
+  saveTasks(cache);
+  return getCachedTasks();
+}
+
 // Only tasks from currently-enabled lists are returned — toggling a list
 // off in the companion app takes effect immediately, without waiting for
 // or triggering a new poll.

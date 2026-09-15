@@ -1,5 +1,5 @@
 import { pollCalendar, resetSyncTokens as resetCalendarSyncTokens } from './calendarService.js';
-import { pollTodo } from './todoService.js';
+import { pollTodo, clearCompletedTasks } from './todoService.js';
 import { getSettings } from './settingsService.js';
 import { pollWeather } from './weatherService.js';
 import { broadcast } from '../ws/hub.js';
@@ -13,13 +13,26 @@ const WEATHER_POLL_INTERVAL_MS = 15 * 60 * 1000;
 let timer = null;
 let lastFullResyncDay = null;
 let lastSettingsDay = null;
+let lastCompletedCleanupDay = null;
 let lastWeatherPollAt = 0;
 
 async function runPoll() {
-  const today = new Date().toDateString();
+  const now = new Date();
+  const today = now.toDateString();
   if (lastFullResyncDay !== today) {
     resetCalendarSyncTokens();
     lastFullResyncDay = today;
+  }
+
+  // Once a week, as soon as the day rolls over to Monday -- getDay() === 1
+  // -- rather than on a rolling "7 days since last cleanup" timer, so it
+  // always lands on the same day regardless of when the server last
+  // restarted. Only ever removes completed tasks from the local cache
+  // (see clearCompletedTasks), never the real task in Microsoft To Do.
+  if (lastCompletedCleanupDay !== today && now.getDay() === 1) {
+    const tasks = clearCompletedTasks();
+    broadcast({ type: 'todo', data: tasks });
+    lastCompletedCleanupDay = today;
   }
 
   const settings = getSettings();
