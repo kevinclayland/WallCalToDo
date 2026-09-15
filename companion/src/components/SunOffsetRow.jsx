@@ -25,7 +25,7 @@ export default function SunOffsetRow({ title, time, offset, disabled, onChange }
   return (
     <div className="sun-offset">
       <p className="sun-offset__title">
-        {title} {time ? formatTime(time) : '—'}
+        {title} <span className="sun-offset__time">{time ? formatTime(time) : '—'}</span>
       </p>
       <div className="sun-offset__controls">
         <select

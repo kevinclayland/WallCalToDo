@@ -395,6 +395,17 @@ body {
   font-size: 0.9rem;
 }
 
+/* The actual grabbed value (the chosen place, the sunrise/sunset times
+   below), not a label -- accent blue instead of bold so it doesn't read
+   as its own heading next to "Location"/"Theme"/etc, and readable in
+   both themes since --color-accent is already tuned per-theme for
+   contrast (see the two :root blocks up top). */
+.location-settings__current-value,
+.sun-offset__time {
+  font-weight: 400;
+  color: var(--color-accent);
+}
+
 .sun-offsets {
   display: flex;
   flex-direction: column;

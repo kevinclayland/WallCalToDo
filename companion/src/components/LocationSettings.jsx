@@ -90,7 +90,9 @@ export default function LocationSettings({ settings, onSaveLocation, onError }) 
       {settings?.location && (
         <p className="location-settings__current">
           Currently set to{' '}
-          <strong>{settings.location.label || `${settings.location.lat.toFixed(2)}, ${settings.location.lon.toFixed(2)}`}</strong>
+          <span className="location-settings__current-value">
+            {settings.location.label || `${settings.location.lat.toFixed(2)}, ${settings.location.lon.toFixed(2)}`}
+          </span>
         </p>
       )}
 
