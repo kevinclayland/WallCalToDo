@@ -1,5 +1,6 @@
 import { useLayoutEffect, useEffect, useRef, useState } from 'react';
 import { dateKey, formatClock, ordinalSuffix, parseLocalDate, sortDayEvents } from '../utils/date.js';
+import Legend from './Legend.jsx';
 
 // The agenda list's own default text size (matches the design), and the
 // smallest it's ever allowed to shrink to on a day packed with events —
@@ -83,6 +84,14 @@ export default function DayAgenda({ events, privacyMode }) {
           ))}
         </ul>
       )}
+      {/* Hidden in privacy mode too — it names calendars (e.g. "Family")
+          and their colors, which is exactly the kind of at-a-glance info
+          privacy mode is meant to hide. A real flex sibling here (not
+          absolutely positioned) rather than floating over the content:
+          .agenda's flex column naturally reserves its real height, so the
+          event list above it (flex: 1) already shrinks to leave room for
+          it instead of the two ever overlapping. */}
+      {!privacyMode && <Legend events={events} />}
     </section>
   );
 }

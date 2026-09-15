@@ -55,7 +55,11 @@ function upsertEvent(entries, event, context) {
 function normalizeEvent(event, context) {
   // An event can override its calendar's color (Google Calendar's "change
   // color of this event" option) via colorId — respect that when set,
-  // otherwise fall back to the calendar's own color.
+  // otherwise fall back to the calendar's own color. calendarColor is
+  // always the calendar's own, never-overridden color, kept alongside
+  // `color` so a consumer (the wall display's calendar-color legend) can
+  // tell "this calendar's own color" apart from "an event recolored
+  // within it" even when the two differ.
   const overrideColor = event.colorId && context.eventColors?.[event.colorId]?.background;
   return {
     id: event.id,
@@ -65,6 +69,7 @@ function normalizeEvent(event, context) {
     allDay: Boolean(event.start?.date && !event.start?.dateTime),
     location: event.location || null,
     calendarLabel: context.calendarLabel,
+    calendarColor: context.color,
     color: overrideColor || context.color,
   };
 }

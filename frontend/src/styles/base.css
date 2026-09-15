@@ -21,6 +21,12 @@ body {
 
 .view__empty {
   color: var(--color-text-muted);
+  /* Fills the same space the real list would (.agenda__list/.todo-list
+     are flex: 1 too) -- in .agenda specifically, this is what keeps
+     .legend pinned to the panel's bottom via the flex column even when
+     there's no event list above it to do that. */
+  flex: 1;
+  min-height: 0;
 }
 
 /*
@@ -361,6 +367,52 @@ body {
      rounded — but a pill that wraps to 2-3 lines keeps this same radius
      instead of ballooning into a taller stadium shape. */
   border-radius: calc((1.3em + 2 * (0.2em + 2px) + 4px) / 2);
+}
+
+/* Calendar-color key, pinned to the agenda panel's own bottom-left corner
+   — see Legend.jsx. A real flex-column child (flex-shrink: 0), not
+   absolutely positioned floating over the content: that's what makes
+   .agenda__list/.view__empty (both flex: 1) correctly shrink to leave
+   real room for it instead of the two ever overlapping. */
+.legend {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  /* Bleeds through .agenda's own padding on these two sides so the
+     circles land at an exact 10px inset from the panel's actual corner
+     regardless of what .agenda's own padding happens to be, rather than
+     hardcoding a number that would silently drift if that padding ever
+     changes. */
+  margin-left: calc(-1 * var(--space-md));
+  margin-bottom: calc(-1 * var(--space-sm));
+  padding: 0 0 10px 10px;
+}
+
+.legend__group {
+  position: relative;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.legend__circle {
+  /* Stacked via position: absolute within .legend__group instead of
+     side by side — bottom is 0 here (the front/main circle) and
+     overridden per secondary circle in Legend.jsx (7px further back
+     each), so each one peeks out just above the circle in front of it. */
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.legend__circle--main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
 }
 
 .todo-list {
