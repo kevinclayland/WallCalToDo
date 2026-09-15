@@ -295,7 +295,14 @@ body {
 }
 
 .todo {
-  overflow-y: auto;
+  /* A column so .todo-list (flex: 1 below) gets a definite, bounded
+     height, and the weather widget after it (see WeatherWidget.jsx) can
+     be pinned to the bottom via flex the same way the legend is in
+     .agenda — see below. Overflow itself moved to .todo-list's own
+     scrolling instead of happening here. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border-left: 1px solid var(--color-border);
 }
 
@@ -451,6 +458,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .todo-list__item {
@@ -493,4 +503,35 @@ body {
 .todo-list__due {
   font-size: 0.75em;
   color: var(--color-text-muted);
+}
+
+/* Outside temperature, pinned to the to-do panel's own bottom-right corner
+   — see WeatherWidget.jsx. Mirror of .legend's bleed-and-repad technique,
+   just on the opposite two sides: bleeds through .todo's own padding on
+   the right/bottom so the reading lands at an exact 10px inset from the
+   panel's actual corner regardless of what .todo's own padding happens to
+   be, the same reasoning .legend uses on its own corner. A real flex-
+   column child (flex-shrink: 0), not absolutely positioned floating over
+   the content, so .todo-list/.view__empty (both flex: 1) correctly
+   shrink to leave it real room instead of the two ever overlapping. */
+.weather {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25em;
+  /* Matches the legend circles' own 28px height/font-size. */
+  font-size: 28px;
+  margin-right: calc(-1 * var(--space-md));
+  margin-bottom: calc(-1 * var(--space-sm));
+  padding: 0 10px 10px 0;
+}
+
+.weather__emoji,
+.weather__temp {
+  line-height: 1;
+}
+
+.weather__temp {
+  font-weight: 600;
 }

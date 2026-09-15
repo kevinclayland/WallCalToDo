@@ -1,10 +1,12 @@
+import WeatherWidget from './WeatherWidget.jsx';
+
 // Placeholder presentation only — swap this markup/styling for the real
 // design later. Data shape stays the same: [{ id, title, completed, due, importance }]
 //
 // Checkboxes are purely a visual read/not-read indicator of each item's
 // real completion state — there's no touch input on this display to
 // toggle them.
-export default function TodoView({ tasks, privacyMode }) {
+export default function TodoView({ tasks, privacyMode, weather, settings }) {
   return (
     <section className="todo">
       <h2 className="todo__heading">To Do</h2>
@@ -36,6 +38,13 @@ export default function TodoView({ tasks, privacyMode }) {
           ))}
         </ul>
       )}
+      {/* Unlike the legend, this shows even in privacy mode -- the outside
+          temperature doesn't reveal anything about the calendar or to-do
+          list, which is what that mode is actually hiding. Real flex
+          sibling here too (see .weather in base.css), same reasoning as
+          the legend: .todo-list/.view__empty (flex: 1) shrink to leave
+          it real room instead of the two overlapping. */}
+      <WeatherWidget weather={weather} settings={settings} />
     </section>
   );
 }

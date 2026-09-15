@@ -18,7 +18,7 @@ function effectiveTheme(settings, now) {
 }
 
 export default function App() {
-  const { calendar, todo, settings, connected } = useWebSocket();
+  const { calendar, todo, settings, weather, connected } = useWebSocket();
 
   // Its own clock, same pattern as CalendarView/DayAgenda: this only needs
   // to catch the sunrise/sunset boundary passing, not tick every second, so
@@ -40,7 +40,7 @@ export default function App() {
       <CalendarView events={calendar} connected={connected} privacyMode={privacyMode} />
       <div className="bottom">
         <DayAgenda events={calendar} privacyMode={privacyMode} />
-        <TodoView tasks={todo} privacyMode={privacyMode} />
+        <TodoView tasks={todo} privacyMode={privacyMode} weather={weather} settings={settings} />
       </div>
     </div>
   );

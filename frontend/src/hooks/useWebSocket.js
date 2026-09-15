@@ -11,6 +11,7 @@ export function useWebSocket() {
   const [calendar, setCalendar] = useState([]);
   const [todo, setTodo] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [weather, setWeather] = useState(null);
   const [connected, setConnected] = useState(false);
   const socketRef = useRef(null);
 
@@ -34,6 +35,7 @@ export function useWebSocket() {
         if (message.type === 'calendar') setCalendar(message.data);
         else if (message.type === 'todo') setTodo(message.data);
         else if (message.type === 'settings') setSettings(message.data);
+        else if (message.type === 'weather') setWeather(message.data);
       };
     }
 
@@ -45,5 +47,5 @@ export function useWebSocket() {
     };
   }, []);
 
-  return { calendar, todo, settings, connected };
+  return { calendar, todo, settings, weather, connected };
 }
