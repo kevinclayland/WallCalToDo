@@ -291,9 +291,15 @@ body {
   margin-bottom: 0.75rem;
 }
 
-.privacy-toggle__label {
+/* Shared small section-label style -- "Privacy mode" and "Theme" both use
+   it, so the two always match without duplicating the same two values. */
+.settings-label {
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.theme-label {
+  margin: 0 0 0.5rem;
 }
 
 .privacy-toggle__hint {

@@ -21,7 +21,7 @@ export default function GeneralSettings({
   return (
     <section className="settings-card">
       <div className="privacy-toggle">
-        <span className="privacy-toggle__label">Privacy mode</span>
+        <span className="settings-label">Privacy mode</span>
         <label className="switch">
           <input
             type="checkbox"
@@ -37,6 +37,7 @@ export default function GeneralSettings({
         list with a placeholder notice on the wall display.
       </p>
 
+      <p className="settings-label theme-label">Theme</p>
       <div className="segmented" role="group" aria-label="Theme">
         {THEME_OPTIONS.map(({ value, label }) => (
           <button
