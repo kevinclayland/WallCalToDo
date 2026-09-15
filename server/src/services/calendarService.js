@@ -70,6 +70,7 @@ function normalizeEvent(event, context) {
     location: event.location || null,
     calendarLabel: context.calendarLabel,
     calendarColor: context.color,
+    calendarOrder: context.calendarOrder,
     color: overrideColor || context.color,
   };
 }
@@ -179,6 +180,14 @@ export async function pollCalendar() {
   const cache = loadEvents();
   const sync = loadSync();
   let changed = false;
+  // Position within the same account-then-calendar order listAccounts()
+  // already returns (itself just however Google's calendarList.list()
+  // returned them, preserved verbatim — see googleAuth.js) — carried
+  // through to each event as calendarOrder so a consumer (the wall
+  // display's calendar-color legend) can sort calendars the same way
+  // the companion app's own calendar list already reads, instead of
+  // guessing at an order (e.g. alphabetically) that doesn't match it.
+  let calendarOrder = 0;
 
   for (const account of accounts) {
     let calendarApi;
@@ -198,7 +207,7 @@ export async function pollCalendar() {
 
     for (const cal of account.calendars) {
       const key = cacheKey(account.id, cal.id);
-      const context = { calendarLabel: cal.summary, color: cal.backgroundColor, eventColors };
+      const context = { calendarLabel: cal.summary, color: cal.backgroundColor, eventColors, calendarOrder: calendarOrder++ };
       try {
         const calChanged = await pollOneCalendar(calendarApi, key, cal.id, context, cache, sync);
         changed = changed || calChanged;

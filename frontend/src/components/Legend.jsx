@@ -16,19 +16,27 @@ const STACK_OFFSET = 7;
 // refreshes them. Any other distinct color actually used within that same
 // calendar becomes a secondary/override swatch, sorted for a stable order
 // across renders instead of whatever order events happen to be in.
+//
+// Groups themselves are ordered by event.calendarOrder -- each calendar's
+// position in the account-then-calendar order the server already fetched
+// from Google (see calendarService.js), the same order the companion
+// app's own calendar list displays. Missing it (again, only possible for
+// events cached before that field existed) sorts a group to the end
+// rather than crashing the sort, until the next resync fills it in.
 function buildGroups(events) {
   const byLabel = new Map();
   for (const event of events) {
     const mainColor = event.calendarColor || event.color;
     if (!mainColor) continue;
     if (!byLabel.has(event.calendarLabel)) {
-      byLabel.set(event.calendarLabel, { mainColor, secondary: new Set() });
+      byLabel.set(event.calendarLabel, { mainColor, secondary: new Set(), order: event.calendarOrder });
     }
     const group = byLabel.get(event.calendarLabel);
+    if (group.order === undefined) group.order = event.calendarOrder;
     if (event.color && event.color !== group.mainColor) group.secondary.add(event.color);
   }
   return [...byLabel.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([, a], [, b]) => (a.order ?? Infinity) - (b.order ?? Infinity))
     .map(([label, { mainColor, secondary }]) => ({
       label,
       mainColor,
