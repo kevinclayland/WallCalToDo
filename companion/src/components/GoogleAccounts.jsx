@@ -5,7 +5,7 @@ import { CAN_ADD_ACCOUNTS } from '../constants.js';
 export default function GoogleAccounts({ accounts, loading, error, busyAccountId, onToggleCalendar, onRefreshAccount, onDisconnectAccount }) {
   return (
     <>
-      <header className="page__header page__header--section page__header--sub">
+      <header className="page__header page__header--gap page__header--sub">
         <h1>Google Calendar</h1>
         <p className="page__subtitle">Manage which Google calendars show up on the display.</p>
       </header>

@@ -79,9 +79,11 @@ body {
 /* Extra breathing room below the page's own top-level title, before
    "General settings" right underneath it — the 0.25rem on the h1 above is
    sized for a header immediately followed by its own subtitle, too tight
-   for the gap before a whole new section starts. */
+   for the gap before a whole new section starts. Same 2.5rem gap as
+   .page__header--gap below, so the title->General settings and General
+   settings->Google Calendar gaps read as the same size. */
 .page__header--main {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
 }
 
 /* Section-level headers (General settings, Google Calendar, Microsoft To
@@ -100,6 +102,14 @@ body {
   margin-top: 2.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--color-border);
+}
+
+/* Same gap as .page__header--section, minus the divider line -- General
+   settings already ends in its own bordered .settings-card, so a second
+   line right under it would be redundant. Only margin-top (no
+   padding-top) since there's no line here to clear. */
+.page__header--gap {
+  margin-top: 2.5rem;
 }
 
 .banner {
