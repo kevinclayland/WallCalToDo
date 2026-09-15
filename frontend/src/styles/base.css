@@ -344,6 +344,13 @@ body {
   gap: var(--space-xs);
 }
 
+/* An event whose end time has passed (see DayAgenda.jsx) -- dimmed, not
+   hidden, so today's agenda still reads as a full record of the day
+   rather than shrinking down to just what's left. */
+.agenda__item--past {
+  opacity: 0.5;
+}
+
 .agenda__time {
   width: 5em;
   flex-shrink: 0;

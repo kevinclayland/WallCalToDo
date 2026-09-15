@@ -74,14 +74,22 @@ export default function DayAgenda({ events, privacyMode }) {
         <p className="view__empty">Nothing on the calendar today.</p>
       ) : (
         <ul className="agenda__list" ref={listRef}>
-          {todayEvents.map((event) => (
-            <li key={event.id} className="agenda__item">
-              <span className="agenda__time">{event.allDay ? 'All day' : formatClock(new Date(event.start))}</span>
-              <span className="event-pill agenda__pill" style={{ '--event-color': event.color || 'var(--color-accent)' }}>
-                {event.title}
-              </span>
-            </li>
-          ))}
+          {todayEvents.map((event) => {
+            // Dimmed once it's over -- checked against the *end* time only,
+            // never the start, so an event you're currently in the middle
+            // of stays fully visible. All-day events are exempt entirely:
+            // they don't have a real "end time" the way a timed event
+            // does, so they stay fully visible all day regardless of `now`.
+            const isPast = !event.allDay && now >= new Date(event.end);
+            return (
+              <li key={event.id} className={`agenda__item${isPast ? ' agenda__item--past' : ''}`}>
+                <span className="agenda__time">{event.allDay ? 'All day' : formatClock(new Date(event.start))}</span>
+                <span className="event-pill agenda__pill" style={{ '--event-color': event.color || 'var(--color-accent)' }}>
+                  {event.title}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
       {/* Hidden in privacy mode too — it names calendars (e.g. "Family")
