@@ -282,6 +282,11 @@ export default function App() {
   return (
     <div className="page">
       <header className="page__header page__header--main">
+        {/* import.meta.env.BASE_URL, not a hardcoded "/" -- this app is
+            served at /companion/ in production (see vite.config.js's
+            base), and unlike index.html's own <link> tags, Vite doesn't
+            rewrite a plain runtime string here to add that prefix. */}
+        <img src={`${import.meta.env.BASE_URL}apple-touch-icon.png`} alt="" className="page__logo" />
         <h1>WallCalToDo</h1>
       </header>
 

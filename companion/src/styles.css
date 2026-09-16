@@ -81,9 +81,26 @@ body {
    sized for a header immediately followed by its own subtitle, too tight
    for the gap before a whole new section starts. Same 2.5rem gap as
    .page__header--gap below, so the title->General settings and General
-   settings->Google Calendar gaps read as the same size. */
+   settings->Google Calendar gaps read as the same size. Also stacks and
+   centers the logo above the title, instead of the plain left-aligned
+   text-only header every other .page__header is. */
 .page__header--main {
   margin-bottom: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.page__logo {
+  /* Rounded like the icon reads everywhere else it appears (the iOS home
+     screen icon, the browser tab favicon) -- the source image itself is
+     a plain square, so without this it'd show as a hard-edged black box
+     against the page's own (light, by default) background. */
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
 }
 
 /* Section-level headers (General settings, Google Calendar, Microsoft To
