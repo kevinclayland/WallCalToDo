@@ -93,10 +93,14 @@ body {
 }
 
 .page__logo {
-  /* The icon's own rounded corners are already transparent in the source
-     image -- no border-radius needed here to fake it. */
+  /* Back to a plain square source image (see favicon commit history --
+     a version with its own rounded/transparent corners made iOS's home
+     screen icon show two mismatched corner radii stacked, since iOS
+     applies its own rounding mask on top regardless), so this needs its
+     own border-radius again to avoid a hard-edged square here too. */
   width: 56px;
   height: 56px;
+  border-radius: 12px;
   margin-bottom: 0.5rem;
 }
 
