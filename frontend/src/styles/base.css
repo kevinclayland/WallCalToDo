@@ -93,6 +93,14 @@ body {
     /* The divider is now beside the calendar, not underneath it. */
     border-bottom: none;
     border-right: 1px solid var(--color-border);
+    /* Portrait's small top gap sits between the header and .calendar-grid's
+       own border-top -- fine there, since that border is calendar-grid's
+       own top edge and the gap is just breathing room above it. Landscape
+       moved that separator line to .body instead (see its border-top
+       above), sitting higher up, above this padding -- so the same gap
+       here would leave the calendar-grid's column gridlines visibly not
+       touching that line. Removed so they connect directly under it. */
+    padding-top: 0;
   }
 }
 
