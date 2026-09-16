@@ -63,11 +63,20 @@ export default function DayAgenda({ events, privacyMode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventsSignature]);
 
-  const heading = `${now.toLocaleDateString(undefined, { weekday: 'long' })}, ${now.toLocaleDateString(undefined, { month: 'long' })} ${now.getDate()}${ordinalSuffix(now.getDate())}`;
+  const weekday = now.toLocaleDateString(undefined, { weekday: 'long' });
+  const monthDay = `${now.toLocaleDateString(undefined, { month: 'long' })} ${now.getDate()}${ordinalSuffix(now.getDate())}`;
 
   return (
     <section className="agenda">
-      <h2 className="agenda__heading">{heading}</h2>
+      {/* A deliberate two-line split, not just wherever "Weekday, Month
+          Dayth" happens to wrap on its own -- that could break mid-word
+          (e.g. "Tuesday, September" / "15th") depending on how narrow the
+          agenda panel is. */}
+      <h2 className="agenda__heading">
+        {weekday},
+        <br />
+        {monthDay}
+      </h2>
       {privacyMode ? (
         <p className="view__empty">Privacy mode activated</p>
       ) : todayEvents.length === 0 ? (

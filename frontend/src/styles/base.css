@@ -65,6 +65,12 @@ body {
   .body {
     grid-template-rows: 1fr;
     grid-template-columns: 19fr 5fr;
+    /* Calendar and .secondary are side by side here, so the separator
+       under the header needs to be owned by something that spans both
+       of them, not by .calendar-grid alone (see its own border-top
+       above) — otherwise it only reaches as far as the calendar's own
+       column. */
+    border-top: 1px solid var(--color-border);
   }
 }
 
@@ -158,8 +164,17 @@ body {
   background: var(--color-border);
   /* Top edge only — no side borders (not in the design), and no bottom
      border here since .calendar-section's border-bottom is the one line
-     that separates the calendar from the agenda/to-do section below. */
+     that separates the calendar from the agenda/to-do section below.
+     Landscape moves this to .body instead (see below) so the line spans
+     the full width, over the today/to-do column too, not just the
+     calendar's own (narrower, in landscape) share of it. */
   border-top: 1px solid var(--color-border);
+}
+
+@media (orientation: landscape) {
+  .calendar-grid {
+    border-top: none;
+  }
 }
 
 .calendar-grid__weekday {
@@ -424,7 +439,14 @@ body {
 }
 
 .agenda__time {
-  width: 5em;
+  /* Smaller than the row's own font-size and trimmed down from the
+     column's old 5em width -- that had more slack than "10:00 am"-length
+     text actually needs, at the expense of room the event pill could be
+     using for longer titles. Width is em-of-its-own-(now smaller)-font,
+     so 4em here works out to a real width just under 3.2em of the row's
+     own size instead of the previous full 5em. */
+  font-size: 0.8em;
+  width: 4em;
   flex-shrink: 0;
   white-space: nowrap;
   text-align: right;
@@ -467,6 +489,21 @@ body {
   margin-left: calc(-1 * var(--space-md));
   margin-bottom: calc(-1 * var(--space-sm));
   padding: 0 0 10px 10px;
+}
+
+@media (orientation: landscape) {
+  .legend {
+    /* .agenda has no align-items set, so this (a flex item in .agenda's
+       own column) stretches to the panel's full width by default --
+       justify-content just decides which end of that width the circles
+       actually cluster against. Bottom-left in portrait, bottom-right
+       here — same bleed-and-repad trick as before, just mirrored onto
+       the opposite side. */
+    justify-content: flex-end;
+    margin-left: 0;
+    margin-right: calc(-1 * var(--space-md));
+    padding: 0 10px 10px 0;
+  }
 }
 
 .legend__group {
