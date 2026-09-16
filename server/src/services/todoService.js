@@ -10,12 +10,30 @@ const saveTasks = (cache) => writeJson(TASKS_CACHE_FILE, cache);
 const loadSync = () => readJson(SYNC_FILE, {});
 const saveSync = (sync) => writeJson(SYNC_FILE, sync);
 
+// Graph's dueDateTime.dateTime is a naive "wall clock" string with no
+// offset -- only meaningful together with its sibling timeZone field. This
+// app never sends a timezone preference header on its Graph requests, so
+// Graph's documented default for the To Do tasks API applies: UTC.
+// Appending "Z" makes that explicit, so new Date(due) downstream (the
+// to-do list's due date/time display) parses it as the correct instant
+// instead of silently reinterpreting the same digits as the server/
+// browser's own local time -- which is exactly what produced a constant,
+// wrong hour on every task with a time set (shifted by whatever the local
+// UTC offset happens to be), regardless of the task's real due time.
+function toIsoDue(dueDateTime) {
+  if (!dueDateTime?.dateTime) return null;
+  if (dueDateTime.timeZone === 'UTC') return `${dueDateTime.dateTime}Z`;
+  // Unexpected: Graph returned something other than UTC despite no
+  // preference header. Pass it through as before rather than guess wrong.
+  return dueDateTime.dateTime;
+}
+
 function normalizeTask(task, context) {
   return {
     id: task.id,
     title: task.title,
     completed: task.status === 'completed',
-    due: task.dueDateTime?.dateTime || null,
+    due: toIsoDue(task.dueDateTime),
     importance: task.importance || 'normal',
     listLabel: context.listLabel,
   };
