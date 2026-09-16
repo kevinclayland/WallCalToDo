@@ -93,13 +93,10 @@ body {
 }
 
 .page__logo {
-  /* Rounded like the icon reads everywhere else it appears (the iOS home
-     screen icon, the browser tab favicon) -- the source image itself is
-     a plain square, so without this it'd show as a hard-edged black box
-     against the page's own (light, by default) background. */
+  /* The icon's own rounded corners are already transparent in the source
+     image -- no border-radius needed here to fake it. */
   width: 56px;
   height: 56px;
-  border-radius: 12px;
   margin-bottom: 0.5rem;
 }
 
