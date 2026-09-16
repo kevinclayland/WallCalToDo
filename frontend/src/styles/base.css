@@ -399,6 +399,18 @@ body {
   flex-shrink: 0;
 }
 
+@media (orientation: landscape) {
+  /* Landscape's agenda panel is narrow enough that the heading can wrap
+     mid-phrase on its own (e.g. "Tuesday, September" / "15th") -- force
+     a clean break between the weekday and the month/day instead.
+     Portrait has room for the whole thing on one line (see
+     DayAgenda.jsx) and is untouched by this. */
+  .agenda__heading-day,
+  .agenda__heading-date {
+    display: block;
+  }
+}
+
 .agenda__list {
   list-style: none;
   margin: 0;

@@ -68,14 +68,15 @@ export default function DayAgenda({ events, privacyMode }) {
 
   return (
     <section className="agenda">
-      {/* A deliberate two-line split, not just wherever "Weekday, Month
-          Dayth" happens to wrap on its own -- that could break mid-word
-          (e.g. "Tuesday, September" / "15th") depending on how narrow the
-          agenda panel is. */}
+      {/* Landscape's agenda panel is narrow enough that "Weekday, Month
+          Dayth" can wrap mid-phrase (e.g. "Tuesday, September" / "15th")
+          -- these two spans render inline here (a plain single line,
+          wrapping only if it truly doesn't fit) and only get forced onto
+          their own deliberate two lines in landscape, via CSS -- see
+          .agenda__heading-day/-date in base.css. Portrait has room for
+          the whole thing on one line and stays that way. */}
       <h2 className="agenda__heading">
-        {weekday},
-        <br />
-        {monthDay}
+        <span className="agenda__heading-day">{weekday},</span> <span className="agenda__heading-date">{monthDay}</span>
       </h2>
       {privacyMode ? (
         <p className="view__empty">Privacy mode activated</p>
