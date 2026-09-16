@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { WEEKDAYS, addDays, buildMonthGrid, dateKey, formatClock, parseLocalDate, sortDayEvents } from '../utils/date.js';
+import { WEEKDAYS, addDays, buildMonthGrid, dateKey, parseLocalDate, sortDayEvents } from '../utils/date.js';
 
 // Placeholder presentation only — swap this markup/styling for the real
 // design later. Data shape stays the same: [{ id, title, start, end, allDay, location, calendarLabel, color }]
@@ -130,8 +130,10 @@ function eventDateRange(event) {
   return { start, end };
 }
 
-export default function CalendarView({ events, connected, privacyMode }) {
+export default function CalendarView({ events, privacyMode, onMeasureSplit }) {
   const [now, setNow] = useState(() => new Date());
+  const sectionRef = useRef(null);
+  const weekRowRefs = useRef({});
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 30_000);
@@ -141,6 +143,46 @@ export default function CalendarView({ events, connected, privacyMode }) {
   const todayKey = dateKey(now);
   const cells = buildMonthGrid(now.getFullYear(), now.getMonth());
   const weekCount = cells.length / 7;
+
+  // Landscape layout (see App.jsx/base.css) puts today's agenda and the
+  // to-do list in a column beside the calendar instead of below it, and
+  // the line between those two should land on one of the calendar's own
+  // row lines rather than an arbitrary split -- specifically the first
+  // one past the halfway point of the shared height. Row height isn't a
+  // fixed number (a 4-week February and a 6-week month divide the same
+  // space differently — see the calendar-grid's own gridTemplateRows
+  // below), so this measures the real rendered rows via a ref per week
+  // (weekRowRefs) instead of computing it by hand. Only the boundary
+  // *positions* matter here, not their content, so this re-measures on
+  // weekCount changing (a new month) and on window resize (this display
+  // doesn't need to handle being rotated live, but the layout does need
+  // to stay correct if the browser window itself is resized) — not on
+  // `events` changing, since every week row is the same height (`1fr`)
+  // regardless of what's in it.
+  useLayoutEffect(() => {
+    if (!onMeasureSplit) return;
+    function measure() {
+      const section = sectionRef.current;
+      if (!section) return;
+      const sectionRect = section.getBoundingClientRect();
+      const halfway = sectionRect.height / 2;
+      let chosen = null;
+      for (let week = 0; week < weekCount; week++) {
+        const marker = weekRowRefs.current[week];
+        if (!marker) continue;
+        const bottom = marker.getBoundingClientRect().bottom - sectionRect.top;
+        if (bottom > halfway) {
+          chosen = bottom;
+          break;
+        }
+      }
+      onMeasureSplit(chosen);
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [weekCount, onMeasureSplit]);
+
   const gridStart = cells[0].date;
   const gridEnd = cells[cells.length - 1].date;
   const indexByKey = new Map(cells.map(({ date }, i) => [dateKey(date), i]));
@@ -213,23 +255,29 @@ export default function CalendarView({ events, connected, privacyMode }) {
   }
 
   return (
-    <section className="calendar-section">
-      <div className="calendar-header">
-        <h1 className="calendar-header__date">
-          <span className="calendar-header__month">{now.toLocaleDateString(undefined, { month: 'long' })}</span>
-          <span className="calendar-header__year"> {now.getFullYear()}</span>
-        </h1>
-        <div className="calendar-header__right">
-          <span className={`calendar-header__dot ${connected ? 'is-connected' : 'is-disconnected'}`} />
-          <span className="calendar-header__clock">{formatClock(now)}</span>
-        </div>
-      </div>
-
+    <section className="calendar-section" ref={sectionRef}>
       <div className="calendar-grid" style={{ gridTemplateRows: `auto repeat(${weekCount}, minmax(0, 1fr))` }}>
         {WEEKDAYS.map((day, i) => (
           <div key={day} className="calendar-grid__weekday" style={{ gridRow: 1, gridColumn: i + 1 }}>
             {day}
           </div>
+        ))}
+        {/* Invisible, zero-content markers — one per week row, column 1
+            only (a boundary's vertical position is the same across every
+            column in its row, so there's no need to span all 7) — purely
+            so the effect above has something real to measure via
+            getBoundingClientRect(), rather than re-deriving row heights
+            by hand from gap/border/padding values that'd need updating
+            here too if any of them ever changed. */}
+        {Array.from({ length: weekCount }, (_, week) => (
+          <div
+            key={`row-marker-${week}`}
+            ref={(el) => {
+              if (el) weekRowRefs.current[week] = el;
+            }}
+            aria-hidden="true"
+            style={{ gridRow: week + 2, gridColumn: 1, pointerEvents: 'none' }}
+          />
         ))}
         {cells.map(({ date, inMonth }, i) => {
           const key = dateKey(date);

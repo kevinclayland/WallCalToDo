@@ -30,19 +30,42 @@ body {
 }
 
 /*
- * Top-level layout: calendar section gets a fixed share of the screen
- * height regardless of month length (the grid below adjusts its own row
- * heights to fill that fixed space — see .calendar-grid). The bottom
- * section (today's agenda + to-do) takes the rest. 19fr/5fr is the exact
- * ratio of the 1520px/400px split chosen in the design canvas (both
- * divisible by 80) expressed proportionally instead of in fixed pixels —
- * same split on any screen height, not just the one it was designed
- * against, which matters once this runs on someone else's monitor.
+ * Top-level layout: the header (month/year, clock, status dot) is its own
+ * full-width row above everything else, in both orientations -- "auto"
+ * sizes it to its own content, "1fr" hands the rest to .body below. See
+ * CalendarHeader.jsx/.calendar-header.
  */
 .app {
   height: 100%;
   display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+/*
+ * .body: calendar vs. today/to-do split. Portrait stacks them (calendar on
+ * top, gets a fixed share of the screen height regardless of month length
+ * -- the grid below adjusts its own row heights to fill that fixed space,
+ * see .calendar-grid -- .secondary takes the rest). 19fr/5fr is the exact
+ * ratio of the 1520px/400px split chosen in the design canvas (both
+ * divisible by 80) expressed proportionally instead of in fixed pixels —
+ * same split on any screen height, not just the one it was designed
+ * against. Landscape (this display isn't meant to be rotated live once
+ * mounted, but the layout still needs to respond correctly to a resized
+ * browser window during development/testing) keeps that same 19:5 ratio,
+ * just as columns instead of rows -- calendar left, .secondary as a
+ * right-hand column instead of a strip underneath.
+ */
+.body {
+  min-height: 0;
+  display: grid;
   grid-template-rows: 19fr 5fr;
+}
+
+@media (orientation: landscape) {
+  .body {
+    grid-template-rows: 1fr;
+    grid-template-columns: 19fr 5fr;
+  }
 }
 
 /* ---------- Calendar section ---------- */
@@ -57,6 +80,14 @@ body {
      one of these same column lines). */
   padding: var(--space-xs) 0 0;
   border-bottom: 1px solid var(--color-border);
+}
+
+@media (orientation: landscape) {
+  .calendar-section {
+    /* The divider is now beside the calendar, not underneath it. */
+    border-bottom: none;
+    border-right: 1px solid var(--color-border);
+  }
 }
 
 .calendar-header {
@@ -273,9 +304,12 @@ body {
   transform: translateY(1px);
 }
 
-/* ---------- Bottom section: today's agenda + to-do ---------- */
+/* ---------- Secondary section: today's agenda + to-do ---------- */
 
-.bottom {
+/* Named for what it holds, not where it sits -- portrait has it as a strip
+   below the calendar (agenda/to-do side by side), landscape as a column
+   beside it (agenda/to-do stacked) -- see .body above. */
+.secondary {
   min-height: 0;
   display: grid;
   /* 4fr/3fr = exactly 4/7 and 3/7 of the width — the same fractions the
@@ -283,6 +317,20 @@ body {
      under one of the calendar's own column lines instead of an
      eyeballed, slightly-off percentage. */
   grid-template-columns: 4fr 3fr;
+}
+
+@media (orientation: landscape) {
+  .secondary {
+    grid-template-columns: 1fr;
+    /* --today-height: the exact pixel height CalendarView measured for
+       one of its own row lines (see the useLayoutEffect in
+       CalendarView.jsx and the inline style in App.jsx) -- agenda gets
+       that, to-do gets whatever's left over. The 60% fallback only
+       matters for the brief window before the very first measurement
+       lands (or if it somehow never does); in practice the measurement
+       runs in useLayoutEffect, before the browser ever paints. */
+    grid-template-rows: var(--today-height, 60%) 1fr;
+  }
 }
 
 .agenda,
@@ -304,6 +352,15 @@ body {
   flex-direction: column;
   overflow: hidden;
   border-left: 1px solid var(--color-border);
+}
+
+@media (orientation: landscape) {
+  .todo {
+    /* Stacked under the agenda now, not beside it -- the divider moves
+       to match. */
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
 }
 
 .agenda {

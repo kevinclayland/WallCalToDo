@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useWebSocket } from './hooks/useWebSocket.js';
+import CalendarHeader from './components/CalendarHeader.jsx';
 import CalendarView from './components/CalendarView.jsx';
 import DayAgenda from './components/DayAgenda.jsx';
 import TodoView from './components/TodoView.jsx';
@@ -35,12 +36,24 @@ export default function App() {
 
   const privacyMode = Boolean(settings?.privacyMode);
 
+  // Landscape only (see .secondary in base.css -- ignored by portrait's
+  // own column split) -- the exact pixel height CalendarView measured for
+  // today's agenda, so the line between it and the to-do list lands on
+  // one of the calendar's own row lines instead of an arbitrary split.
+  // null until the first measurement lands (effectively instant --
+  // CalendarView measures in useLayoutEffect, before paint) or if it's
+  // ever unmeasurable, in which case .secondary's own CSS fallback covers it.
+  const [todayHeight, setTodayHeight] = useState(null);
+
   return (
     <div className="app">
-      <CalendarView events={calendar} connected={connected} privacyMode={privacyMode} />
-      <div className="bottom">
-        <DayAgenda events={calendar} privacyMode={privacyMode} />
-        <TodoView tasks={todo} privacyMode={privacyMode} weather={weather} settings={settings} />
+      <CalendarHeader connected={connected} />
+      <div className="body">
+        <CalendarView events={calendar} privacyMode={privacyMode} onMeasureSplit={setTodayHeight} />
+        <div className="secondary" style={{ '--today-height': todayHeight ? `${todayHeight}px` : undefined }}>
+          <DayAgenda events={calendar} privacyMode={privacyMode} />
+          <TodoView tasks={todo} privacyMode={privacyMode} weather={weather} settings={settings} />
+        </div>
       </div>
     </div>
   );
