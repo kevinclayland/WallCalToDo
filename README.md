@@ -41,8 +41,11 @@ app just so it had something to show.
 So instead of inventing its own data model, WallCalToDo reads straight from
 the same accounts my phone already syncs against — the Google Calendar API
 and the Microsoft Graph To Do API — rather than iCloud. Anything I add,
-check off, or move on my phone shows up on the wall, and vice versa,
-because it's the exact same underlying data, not a copy of it.
+check off, or move on my phone shows up on the wall (see "How it works"
+below for the polling delay), because it's the exact same underlying
+data, not a copy of it. The wall display itself is read-only, though —
+there's no touch input, so it's a one-way mirror of what's on my phone,
+not something you edit from.
 
 Reminders specifically needed Microsoft, not Google: the iOS Reminders app
 only syncs with accounts that support the underlying task-sync protocol —
