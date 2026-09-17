@@ -7,11 +7,26 @@ list below it; landscape puts the calendar on the left with today's agenda
 and to-do stacked in a column beside it. It picks whichever automatically
 based on the screen's own aspect ratio, no configuration needed.
 
-![WallCalToDo showing a busy month — colored event pills, multi-day event bars, and a mixed to-do list](docs/screenshot.png)
+<p align="center">
+  <img src="docs/wall-photo.png" alt="WallCalToDo mounted on a wall in a custom wood frame, portrait orientation" width="360">
+</p>
 
-*(Demo data, not a real calendar — shown here with a lot going on to
-demonstrate multi-day events, the "+N more" overflow on a busy day, and a
-mix of completed/pending to-do items with due dates.)*
+Below: the same display in both orientations and themes (click any of
+these to see it fullscreen).
+
+<p align="center">
+  <a href="docs/demo-landscape-light.png"><img src="docs/demo-landscape-light.png" alt="Landscape orientation, light theme" width="380"></a>
+  <a href="docs/demo-landscape-dark.png"><img src="docs/demo-landscape-dark.png" alt="Landscape orientation, dark theme" width="380"></a>
+</p>
+<p align="center">
+  <a href="docs/demo-portrait-light.png"><img src="docs/demo-portrait-light.png" alt="Portrait orientation, light theme" width="220"></a>
+  <a href="docs/demo-portrait-dark.png"><img src="docs/demo-portrait-dark.png" alt="Portrait orientation, dark theme" width="220"></a>
+</p>
+
+*(The four screenshots above use demo data, not a real calendar — shown
+with a lot going on to demonstrate multi-day events, the "+N more"
+overflow on a busy day, and a mix of completed/pending to-do items with
+due dates.)*
 
 ## Why this exists
 
