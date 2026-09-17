@@ -63,14 +63,27 @@ export default function TodoView({ tasks, privacyMode, weather, settings }) {
               <li key={task.id} className={`todo-list__item${task.completed ? ' is-completed' : ''}`}>
                 <span className="todo-list__checkbox" aria-hidden="true">
                   {task.completed ? (
-                    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    // viewBox has a 1-unit margin on every side (-1 -1 20 20,
+                    // not 0 0 18 18) even though the path's own coordinates
+                    // still only span 0-18 -- the path's flat edges touch 0
+                    // and 18 exactly, which is also the old viewBox's own
+                    // clip boundary, so a device that rounds sub-pixel
+                    // anti-aliased coverage the wrong way there can shave a
+                    // hairline off that edge (a "chopped" look on some
+                    // screens/scale factors but not others). The extra
+                    // margin gives that anti-aliasing somewhere to bleed
+                    // into instead of getting clipped.
+                    <svg viewBox="-1 -1 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path
                         d="M16 0C17.1046 0 18 0.895431 18 2V16C18 17.1046 17.1046 18 16 18H2C0.895431 18 8.05332e-09 17.1046 0 16V2C0 0.895431 0.895431 8.05319e-09 2 0H16ZM7 9.89258L4.40039 7.29297L2.29297 9.40039L7 14.1074L15.707 5.40039L13.5996 3.29297L7 9.89258Z"
                         fill="currentColor"
                       />
                     </svg>
                   ) : (
-                    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    // Same margin reasoning as above -- the rect's own stroke
+                    // is centered on its path, so its outer edge sits exactly
+                    // at 0/18 too (x=1, strokeWidth=2 -> outer edge at 0).
+                    <svg viewBox="-1 -1 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <rect x="1" y="1" width="16" height="16" rx="1" stroke="currentColor" strokeWidth="2" />
                     </svg>
                   )}
