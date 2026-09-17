@@ -483,3 +483,10 @@ behind a `data-theme` attribute App.jsx sets on `<html>`, driven by the
 companion app's theme setting) were all designed and shipped this way. The
 data layer (OAuth, polling, WebSocket push) is unaffected by any of it —
 styling changes stay confined to the style files and component markup.
+
+## Roadmap
+
+**Multiple account providers per side** — right now the calendar side is
+Google-only and the to-do side is Microsoft-only. Supporting more than one
+provider on each side (so the calendar side isn't locked to Google, and
+the to-do side isn't locked to Microsoft) is planned for a future release.
