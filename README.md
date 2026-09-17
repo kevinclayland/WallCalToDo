@@ -1,8 +1,11 @@
 # WallCalToDo
 
-A wall-mounted display (old monitor, portrait orientation, + Raspberry Pi)
-that shows a Google Calendar and a Microsoft To Do list at the same time —
-calendar on top, to-do list on the bottom.
+A wall-mounted display (old monitor + Raspberry Pi) that shows a Google
+Calendar and a Microsoft To Do list at the same time. Works mounted either
+way — portrait puts the calendar on top with today's agenda and the to-do
+list below it; landscape puts the calendar on the left with today's agenda
+and to-do stacked in a column beside it. It picks whichever automatically
+based on the screen's own aspect ratio, no configuration needed.
 
 ![WallCalToDo showing a busy month — colored event pills, multi-day event bars, and a mixed to-do list](docs/screenshot.png)
 
@@ -53,21 +56,26 @@ Microsoft Graph API               ─┘                                        
 
 - **server/** — Node/Express backend. Handles OAuth for any number of
   Google accounts plus one Microsoft account, polls each calendar on an
-  interval using delta/sync tokens (cheap, only fetches what changed), and
-  pushes updates to connected displays over a WebSocket. Also exposes the
-  settings API the companion app uses. Serves both built frontends too, so
-  the Pi only runs one process in production.
-- **frontend/** — React kiosk app that renders both views stacked in a
-  single screen (calendar top, to-do bottom). Base colors/spacing/type
-  scale live in `frontend/src/styles/tokens.css`; the actual visual design
-  (event pill styling, the calendar grid, multi-day event bars, etc.) is
-  in `frontend/src/styles/base.css` and the component files themselves.
+  interval using delta/sync tokens (cheap, only fetches what changed),
+  polls the outside temperature separately on its own longer interval,
+  and pushes updates to connected displays over a WebSocket. Also exposes
+  the settings API the companion app uses. Serves both built frontends
+  too, so the Pi only runs one process in production.
+- **frontend/** — React kiosk app that renders the calendar, today's
+  agenda, and the to-do list in one screen, laid out for portrait or
+  landscape automatically (see "Screen orientation" below). Base colors/
+  spacing/type scale live in `frontend/src/styles/tokens.css`; the actual
+  visual design (event pill styling, the calendar grid, multi-day event
+  bars, etc.) is in `frontend/src/styles/base.css` and the component files
+  themselves.
 - **companion/** — React settings app for your phone: connect/disconnect
-  Google accounts and toggle individual calendars on or off. Reachable at
-  `http://<pi-hostname>:3000/companion` over your home Wi-Fi — see
-  "Companion app" below.
-- **pi-setup/** — systemd unit for the backend + kiosk Chromium autostart
-  (configured for a portrait-rotated display).
+  Google and Microsoft accounts, toggle individual calendars/lists on or
+  off, and configure theme, location, temperature units, and privacy mode.
+  Reachable at `http://<pi-hostname>:3000/companion` over your home Wi-Fi —
+  see "Companion app" below.
+- **pi-setup/** — systemd unit for the backend + kiosk Chromium autostart,
+  plus the OS-level display rotation needed for a portrait mount (see
+  "Screen orientation" below — landscape needs none of that).
 
 ## Auto-update behavior
 
@@ -92,19 +100,32 @@ behind home NAT. Polling with delta/sync tokens gets you effectively the
 same result (updates within seconds to a minute) without that
 infrastructure.
 
-## Portrait orientation
+## Screen orientation
 
-The layout (`frontend/src/styles/base.css`, `.app`) is a simple CSS grid:
-calendar takes the top 1520px, the to-do/agenda section the bottom 400px —
-fixed pixel values, not a percentage split, sized for the display's actual
-1080×1920 portrait resolution. This works regardless of the monitor's
-physical rotation — the *browser* just needs to think of the screen as
-portrait (narrow width, tall height), which means the Pi's display output
-itself needs to be rotated to match how the monitor is physically mounted.
-If your display isn't 1080×1920, adjust those two values (and the kiosk
-viewport) to match.
+The layout adapts automatically to whichever way the screen is actually
+mounted — a CSS `orientation: landscape` media query (`frontend/src/
+styles/base.css`), not a setting anywhere, so it responds instantly to the
+screen's real aspect ratio, including a live browser resize during
+development.
 
-Rotate the display at the OS level, not in the browser:
+- **Portrait**: calendar on top, today's agenda and the to-do list in a
+  strip below it, split side by side.
+- **Landscape**: calendar on the left, today's agenda and the to-do list
+  stacked in a column on the right — the agenda gets more of that column's
+  height than the to-do list, and the line between them is snapped to one
+  of the calendar's own row lines rather than an arbitrary split.
+
+Both use the same 19:5 proportion between the calendar and the today/to-do
+area (as rows in portrait, as columns in landscape) — proportional `fr`
+units throughout, not fixed pixel values, so this works at whatever
+resolution your display actually is, not just the exact one it was
+designed against.
+
+Portrait needs the Pi's display output physically rotated to match how
+the monitor is mounted (the *browser* just needs to think of the screen as
+narrow-and-tall) — landscape needs no rotation at all, since that's a
+monitor's native orientation. Rotate at the OS level, not in the browser,
+only if you want portrait:
 
 - **Bookworm (Wayland/labwc)**: `wlr-randr --output <output> --transform 90`
   (use `270` if 90 comes out upside down for your mount), run once to test,
@@ -120,10 +141,32 @@ software rotation, some HDMI/DSI displays also support rotation via
 params) — check your specific display's docs if `wlr-randr`/`xrandr`
 doesn't take effect.
 
+## Calendar legend and outside temperature
+
+Two small widgets round out the wall display, both pinned to a bottom
+corner of their panel (bottom-left/right in portrait, mirrored in
+landscape):
+
+- **Calendar legend** (bottom-left of the agenda panel) — one letter-circle
+  per calendar, in its own color, so a glance at a pill tells you which
+  calendar it's from. If a calendar has events with a per-event color
+  override (Google Calendar's "change color of this event"), those colors
+  stack behind the main circle as plain swatches. Ordered to match the
+  order calendars appear in the companion app, not alphabetically.
+- **Outside temperature** (bottom-right of the to-do panel) — current
+  temperature plus a weather emoji, from [Open-Meteo](https://open-meteo.com/)
+  (free, no API key), refreshed every 15 minutes. Switches to a moon-phase
+  emoji (all 8 phases) once the sun sets, using the same sunrise/sunset
+  times driving Automatic theme, and swaps in a 😷 mask instead of the
+  weather icon when the local air quality is unhealthy (wildfire smoke,
+  etc. — EPA US AQI ≥ 151). Needs a location set in the companion app
+  (Location section) to show anything at all; Fahrenheit or Celsius is a
+  toggle in that same app's Temperature section.
+
 ## Companion app
 
 A separate small app (`companion/`) served at `/companion` lets you manage
-the calendar side from your phone or laptop, on the same Wi-Fi as the Pi:
+everything from your phone or laptop, on the same Wi-Fi as the Pi:
 
 - **API credentials** — each of the Google Calendar and Microsoft To Do
   sections has its own Client ID/Client Secret form, with a "Where do I
@@ -140,28 +183,48 @@ the calendar side from your phone or laptop, on the same Wi-Fi as the Pi:
   switch hides or shows that calendar's events on the wall display
   immediately — no polling delay, since filtering happens at read time
   against calendars already cached.
-- **Disconnect an account** — removes it and its cached events entirely.
+- **Disconnect a Google account** — removes it and its cached events
+  entirely.
 - **Refresh calendars** — Google doesn't notify us when you create a new
   calendar, so this button re-fetches an account's calendar list on
   demand (new calendars default to enabled).
-- **General settings — theme** — a Light/Dark/Automatic segmented control
-  at the top of the page. Automatic switches the wall display between
-  light and dark at sunrise/sunset for a location you set by **searching
-  for a city** (backed by OpenStreetMap's free Nominatim geocoder,
+- **Connect a Microsoft account** — same idea as Google, but only one
+  account at a time. Discovers every To Do list on it (including ones
+  shared with you), each with its own on/off toggle. Completed tasks are
+  cleared out automatically once a week (the first poll after midnight on
+  a Monday) to keep the list from accumulating crossed-off items forever —
+  this only trims what the wall display shows, it never touches the real
+  task in Microsoft To Do, so un-completing or editing one afterward brings
+  it right back.
+- **Privacy mode** — a single toggle that hides event titles (only their
+  colored pills stay visible) and replaces today's agenda and the to-do
+  list with a placeholder notice on the wall display, for whenever you'd
+  rather not have the contents visible at a glance.
+- **Location** — set once by **searching for a city** (backed by
+  OpenStreetMap's free Nominatim geocoder,
   `server/src/services/geocodeService.js` — this one part does need
-  internet access, unlike the sunrise/sunset math itself) — works from
-  any device, including your phone. "Use my location" is also there as a
-  zero-typing shortcut when it's available, but browser geolocation needs
-  a secure context, so it only shows up when the companion app is opened
-  on the Pi's own screen. Sunrise/sunset itself is computed locally
-  (`server/src/services/sunService.js`), no API call needed for that
-  part. Once a location is set, a Sunrise row and a Sunset row each let
-  you shift the actual switch time by 15/30/45 min or 1/2/3 hours,
-  Before or After the real sun event (e.g. Sunset + 30 min "After" so it
-  doesn't go dark right at sunset) — the displayed time on each row is
-  already offset-adjusted, i.e. the moment the switch actually happens.
-  The change pushes to the wall display immediately over the same
-  WebSocket connection used for calendar/to-do updates.
+  internet access), shared by both Automatic theme and the outside
+  temperature widget. "Use my location" is also there as a zero-typing
+  shortcut when it's available, but browser geolocation needs a secure
+  context, so it only shows up when the companion app is opened on the
+  Pi's own screen — searching for a city works from anywhere, including
+  your phone.
+- **Theme** — a Light/Dark/Automatic segmented control. Automatic switches
+  the wall display between light and dark at sunrise/sunset for the
+  location above (computed locally, `server/src/services/sunService.js` —
+  no API call needed for this part). Once a location is set, an Advanced
+  toggle reveals a Sunrise row and a Sunset row that each let you shift the
+  actual switch time by 15/30/45 min or 1/2/3 hours, Before or After the
+  real sun event (e.g. Sunset + 30 min "After" so it doesn't go dark right
+  at sunset) — the displayed time on each row is already offset-adjusted,
+  i.e. the moment the switch actually happens.
+- **Temperature units** — F°/C° for the outside temperature widget (see
+  "Calendar legend and outside temperature" above); disabled with an
+  explanatory notice until a location is set.
+
+Every change here pushes to the wall display immediately over the same
+WebSocket connection used for calendar/to-do updates — no refresh needed
+on either end.
 
 This intentionally does *not* have a login/passcode — it trusts your home
 network, same as the rest of this setup. It's also **not reachable from
@@ -173,12 +236,6 @@ publicly.
 from your phone — see step 7 of the setup guide below for why. Everyday
 use of the companion app (toggling calendars, disconnecting an account)
 works fine from your phone once accounts are already connected.
-
-Note that geolocation itself (the "Use my location" button, for Automatic
-theme mode) needs a secure context — same restriction as the OAuth connect
-flow above, so it only shows up when the companion app is opened on the
-Pi's own screen. Searching for a city works from anywhere, including your
-phone — that's the normal way to set a location.
 
 ## Hardware notes
 
@@ -293,7 +350,7 @@ Do this step on the Pi's own screen (i.e. with a keyboard/mouse on the
 monitor connected to the Pi, in its normal desktop — not kiosk mode yet,
 and not from your phone). This is required because the redirect URLs each
 provider needs are `localhost`-only, which only means something to a
-browser running on the Pi itself — see "Companion app" above for why.
+browser running on the Pi itself.
 
 1. Open the Pi's Chromium (Menu → Internet → Chromium) and go to:
    ```
@@ -337,11 +394,12 @@ your real events/tasks. If it's empty, give it a minute (it polls every
 as a fallback — whatever's saved through the companion app just takes
 priority over them.</sub>
 
-### 8. Rotate the display and enable kiosk mode
+### 8. Enable kiosk mode (and rotate the display, if mounting in portrait)
 
-Follow **`pi-setup/kiosk/README.md`** — it covers rotating the display to
-portrait and setting Chromium to auto-launch full-screen on boot,
-depending on your Pi OS version.
+Follow **`pi-setup/kiosk/README.md`** — it covers setting Chromium to
+auto-launch full-screen on boot, plus rotating the display if you're
+mounting in portrait (skip that part for landscape — see "Screen
+orientation" above), depending on your Pi OS version.
 
 Then reboot:
 
@@ -349,8 +407,7 @@ Then reboot:
 sudo reboot
 ```
 
-The Pi should come back up straight into the full-screen display, already
-rotated to portrait.
+The Pi should come back up straight into the full-screen display.
 
 ### 9. Mount it
 
@@ -407,20 +464,22 @@ of the setup guide above if you haven't created those yet), then use
 **+ Add Google account** / **+ Connect Microsoft account**.
 
 To preview the kiosk's portrait layout on a normal monitor, just shrink
-the browser window narrow — no special flag needed.
+the browser window narrow (taller than it is wide) — no special flag
+needed. Widen it back out (wider than tall) to preview landscape instead.
 
 ## Design
 
 The visual design lives directly in this repo now — `frontend/src/styles/
 tokens.css` for the base color/spacing/type scale, `frontend/src/styles/
-base.css` and the component files (`CalendarView.jsx`, `DayAgenda.jsx`,
-`TodoView.jsx`) for the actual layout and styling. It's been iterated on
-in place rather than built separately and dropped in: the calendar grid,
-event pill styling (a stroke in the event's own color over a tinted
-background, not a solid fill), multi-day event bars, the fixed
-1520px/400px section split, and a light/dark theme (`tokens.css` defines
-both palettes behind a `data-theme` attribute App.jsx sets on `<html>`,
-driven by the companion app's theme setting) were all designed and
-shipped this way. The data layer (OAuth, polling, WebSocket push) is
-unaffected by any of it — styling changes stay confined to the two style
-files and component markup.
+base.css` and the component files (`CalendarView.jsx`, `CalendarHeader.jsx`,
+`DayAgenda.jsx`, `TodoView.jsx`, `Legend.jsx`, `WeatherWidget.jsx`) for the
+actual layout and styling. It's been iterated on in place rather than
+built separately and dropped in: the calendar grid, event pill styling (a
+stroke in the event's own color over a tinted background, not a solid
+fill), multi-day event bars, the portrait/landscape split (proportional
+`fr` units throughout, not fixed pixels, so it isn't tied to one specific
+resolution), and a light/dark theme (`tokens.css` defines both palettes
+behind a `data-theme` attribute App.jsx sets on `<html>`, driven by the
+companion app's theme setting) were all designed and shipped this way. The
+data layer (OAuth, polling, WebSocket push) is unaffected by any of it —
+styling changes stay confined to the style files and component markup.

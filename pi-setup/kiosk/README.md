@@ -6,11 +6,14 @@ Make the script executable once:
 chmod +x pi-setup/kiosk/kiosk.sh
 ```
 
-Then wire it into autostart depending on your Raspberry Pi OS version. The
-display also needs to be rotated at the OS level to match how the monitor
-is physically mounted in portrait — the browser layout assumes a tall,
-narrow viewport (see the root README's "Portrait orientation" section for
-background).
+Then wire it into autostart depending on your Raspberry Pi OS version.
+Mounting in **landscape**? Skip the rotation line in whichever snippet
+below matches your OS — landscape is a monitor's native orientation, the
+browser layout already adapts to it on its own (see the root README's
+"Screen orientation" section). The rotation commands below are only for a
+**portrait** mount: the display needs to be rotated at the OS level to
+match how the monitor is physically mounted — the browser layout assumes
+a tall, narrow viewport in that case.
 
 ## Bookworm (Wayland / labwc), current Pi OS default
 
@@ -24,7 +27,13 @@ sleep 2
 ```
 
 Use `--transform 270` instead of `90` if the display comes up upside down
-for your particular mounting orientation.
+for your particular mounting orientation. Mounting in landscape instead?
+Drop the `wlr-randr` line entirely — just:
+
+```
+sleep 2
+/home/pi/WallCalToDo/pi-setup/kiosk/kiosk.sh &
+```
 
 The `sleep 2` matters: launching the browser immediately after rotating
 the output races the compositor's own transform handling and is what
@@ -47,6 +56,11 @@ Find your output name with `xrandr` (no args), then edit
 ```
 
 Use `--rotate right` instead of `left` if it comes out upside down.
+Mounting in landscape instead? Drop the `@xrandr` line entirely — just:
+
+```
+@/home/pi/WallCalToDo/pi-setup/kiosk/kiosk.sh
+```
 
 Install `unclutter` if you want the (nonexistent, but just in case) cursor
 hidden at the OS level too: `sudo apt install unclutter`.
