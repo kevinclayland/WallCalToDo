@@ -102,6 +102,7 @@ export async function exchangeCode(code) {
 
 export function removeAccount(accountId) {
   const accounts = loadAccounts();
+  if (!accounts[accountId]) throw new Error(`Unknown Google account: ${accountId}`);
   delete accounts[accountId];
   saveAccounts(accounts);
 }
