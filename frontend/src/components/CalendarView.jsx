@@ -100,13 +100,12 @@ function DayCell({ date, inMonth, isToday, dayEvents, barsSpace, gridRow, gridCo
           <li
             key={event.id}
             className="event-pill calendar-cell__event"
-            title={privacyMode ? undefined : event.title}
             style={{ '--event-color': event.color || 'var(--color-accent)' }}
           >
             {/* Privacy mode: keep the colored pill itself (that's the
                 point — at a glance there's still "something at 2pm"),
-                just never render the title text/tooltip that would
-                say what it is. */}
+                just never render the title text that would say what
+                it is. */}
             {!privacyMode && <span className="calendar-cell__event-text">{event.title}</span>}
           </li>
         ))}
@@ -307,7 +306,6 @@ export default function CalendarView({ events, privacyMode, onMeasureSplit }) {
           <div
             key={`${event.id}-${week}`}
             className="event-pill calendar-bar"
-            title={privacyMode ? undefined : event.title}
             style={{
               gridRow: week + 2,
               gridColumn: `${colStart + 1} / ${colEnd + 2}`,
