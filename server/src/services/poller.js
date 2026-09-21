@@ -30,8 +30,18 @@ async function runPoll() {
   // restarted. Only ever removes completed tasks from the local cache
   // (see clearCompletedTasks), never the real task in Microsoft To Do.
   if (lastCompletedCleanupDay !== today && now.getDay() === 1) {
-    const tasks = clearCompletedTasks();
-    broadcast({ type: 'todo', data: tasks });
+    // Wrapped like the calendar/todo polls below -- runPoll() is called
+    // fire-and-forget from startPolling() with no caller to catch a
+    // rejection, so an uncaught error here used to crash the whole
+    // process (and since lastCompletedCleanupDay never got set, every
+    // restart hit the same failure again -- a permanent crash loop until
+    // whatever caused it was fixed by hand).
+    try {
+      const tasks = clearCompletedTasks();
+      broadcast({ type: 'todo', data: tasks });
+    } catch (err) {
+      console.error('[poller] Weekly to-do cleanup failed:', err.message);
+    }
     lastCompletedCleanupDay = today;
   }
 

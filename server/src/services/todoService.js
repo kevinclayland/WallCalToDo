@@ -134,6 +134,15 @@ export function clearCompletedTasks() {
   const cache = loadTasks();
   for (const entries of Object.values(cache)) {
     for (const [id, task] of Object.entries(entries)) {
+      // A null/undefined entry shouldn't be possible from normalizeTask,
+      // but this cache is a plain JSON file on an SD card with no atomic
+      // write guarantee -- a bad entry here used to throw and crash the
+      // whole server (runPoll's weekly-cleanup call wasn't wrapped in a
+      // try/catch the way the rest of its polls are), which then
+      // crash-looped forever since the same poison entry is hit again on
+      // every restart. Drop it instead of trusting it's always shaped
+      // right.
+      if (!task) { delete entries[id]; continue; }
       if (task.completed) delete entries[id];
     }
   }
@@ -150,7 +159,9 @@ export function getCachedTasks() {
   const tasks = [];
   for (const [key, entries] of Object.entries(cache)) {
     if (!enabledIds.has(key)) continue;
-    tasks.push(...Object.values(entries));
+    // Same defensive skip as clearCompletedTasks -- a null entry here
+    // would otherwise reach sortTasks() below and crash on `a.completed`.
+    tasks.push(...Object.values(entries).filter(Boolean));
   }
   return sortTasks(tasks);
 }
