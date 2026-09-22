@@ -20,9 +20,15 @@ credentialsRouter.put('/credentials/:provider', (req, res) => {
   const clientSecret = (req.body?.clientSecret || '').trim();
   if (!clientId || !clientSecret) return res.status(400).json({ error: 'Client ID and Client Secret are both required' });
 
-  setCredentials(provider, { clientId, clientSecret });
+  // Tenant ID only applies to Microsoft, and it's optional — an empty
+  // value falls back to 'common' (multi-tenant + personal accounts)
+  // inside setCredentials/getCredentials, same as the env-var default.
+  const tenantId = provider === 'ms' ? (req.body?.tenantId || '').trim() : undefined;
+
+  setCredentials(provider, { clientId, clientSecret, tenantId });
   // The MSAL client is built once and cached — without this, saving new
-  // Microsoft credentials wouldn't take effect until the server restarted.
+  // Microsoft credentials (including a changed tenant ID) wouldn't take
+  // effect until the server restarted.
   if (provider === 'ms') resetMsalClient();
 
   res.json(getCredentialsStatus());

@@ -57,6 +57,7 @@ export default function MicrosoftTodo({
           helpSteps={MICROSOFT_HELP_STEPS}
           status={credentialsStatus}
           onSave={onSaveCredentials}
+          withTenantId
         />
       )}
 

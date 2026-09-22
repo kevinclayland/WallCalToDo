@@ -179,13 +179,13 @@ export default function App() {
   // provider is 'google' or 'ms'. Throws on failure so ApiCredentialsForm
   // can show the error inline next to the fields instead of it going to
   // the shared banner above the account list.
-  async function saveCredentials(provider, { clientId, clientSecret }) {
-    const data = await api(`/credentials/${provider}`, {
-      method: 'PUT',
-      body: JSON.stringify({ clientId, clientSecret }),
-    });
-    setCredentials(data);
-  }
+  async function saveCredentials(provider, credentials) {
+  const data = await api(`/credentials/${provider}`, {
+    method: 'PUT',
+    body: JSON.stringify(credentials),
+  });
+  setCredentials(data);
+}
 
   async function toggleCalendar(accountId, calendarId, enabled) {
     // Optimistic update so the switch feels instant; reconciled by the
