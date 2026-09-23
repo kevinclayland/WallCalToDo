@@ -343,6 +343,7 @@ This takes a few minutes on a Pi — that's normal.
 
 ```
 sudo cp ~/WallCalToDo/pi-setup/wallcaltodo.service /etc/systemd/system/
+sudo systemctl daemon-reload
 sudo systemctl enable --now wallcaltodo
 sudo systemctl status wallcaltodo
 ```
