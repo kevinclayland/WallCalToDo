@@ -211,10 +211,46 @@ export default function App() {
     }
   }
 
+  // Mirrors toggleCalendar exactly, one level down (tasklists instead of
+  // calendars) -- same account, same optimistic-update/PATCH/rollback
+  // shape, just a different array on the account object and a different
+  // endpoint (see accountsRouter.js's parallel /calendars vs /tasklists
+  // PATCH routes).
+  async function toggleTaskList(accountId, listId, enabled) {
+    setAccounts((prev) =>
+      prev.map((account) =>
+        account.id !== accountId
+          ? account
+          : {
+              ...account,
+              tasklists: (account.tasklists || []).map((list) => (list.id === listId ? { ...list, enabled } : list)),
+            }
+      )
+    );
+    try {
+      await api(`/accounts/${accountId}/tasklists/${encodeURIComponent(listId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled }),
+      });
+    } catch (err) {
+      setError(err.message);
+      loadAccounts();
+    }
+  }
+
+  // One Refresh action covers both calendars and task lists for the
+  // account -- they're the same underlying Google connection and the same
+  // "Google doesn't push list changes" reasoning applies to both, so two
+  // separate buttons on the same account card would just be two ways to
+  // do the same kind of thing. Run in parallel and reload once, rather
+  // than sequentially with two separate busy/reload cycles.
   async function refreshAccount(accountId) {
     setBusyAccountId(accountId);
     try {
-      await api(`/accounts/${accountId}/refresh`, { method: 'POST' });
+      await Promise.all([
+        api(`/accounts/${accountId}/refresh`, { method: 'POST' }),
+        api(`/accounts/${accountId}/tasklists/refresh`, { method: 'POST' }),
+      ]);
       await loadAccounts();
     } catch (err) {
       setError(err.message);
@@ -224,7 +260,7 @@ export default function App() {
   }
 
   async function disconnectAccount(accountId, email) {
-    if (!window.confirm(`Disconnect ${email}? Its events will disappear from the display.`)) return;
+    if (!window.confirm(`Disconnect ${email}? Its events and to-do items will disappear from the display.`)) return;
     setBusyAccountId(accountId);
     try {
       await api(`/accounts/${accountId}`, { method: 'DELETE' });
@@ -331,6 +367,7 @@ export default function App() {
         credentialsStatus={credentials?.google}
         onSaveCredentials={(creds) => saveCredentials('google', creds)}
         onToggleCalendar={toggleCalendar}
+        onToggleTaskList={toggleTaskList}
         onRefreshAccount={refreshAccount}
         onDisconnectAccount={disconnectAccount}
       />

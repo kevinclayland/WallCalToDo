@@ -1,11 +1,12 @@
 # WallCalToDo
 
 A wall-mounted display (old monitor + Raspberry Pi) that shows a Google
-Calendar and a Microsoft To Do list at the same time. Works mounted either
-way — portrait puts the calendar on top with today's agenda and the to-do
-list below it; landscape puts the calendar on the left with today's agenda
-and to-do stacked in a column beside it. It picks whichever automatically
-based on the screen's own aspect ratio, no configuration needed.
+Calendar, Google Task list, and a Microsoft To Do list at the same time.
+Works mounted either way — portrait puts the calendar on top with today's
+agenda and the to-do list below it; landscape puts the calendar on the
+left with today's agenda and to-do stacked in a column beside it. It picks
+whichever automatically based on the screen's own aspect ratio, no
+configuration needed.
 
 <p align="center">
   <img src="docs/wall-photo.png" alt="WallCalToDo mounted on a wall in a custom wood frame, portrait orientation" width="360">
@@ -31,43 +32,30 @@ due dates.)*
 ## Why this exists
 
 The point of this project isn't a new to-do app — it's to get a wall
-calendar without giving up the one I already have. My actual calendar and
-to-do list live in the stock iOS apps: Calendar (backed by a Google/Gmail
-account) and Reminders (backed by a Microsoft account, which is what "To
-Do" runs on under the hood). That's genuinely how I organize my life day to
-day, and I didn't want a wall display that meant switching to yet another
-app just so it had something to show.
+calendar without giving up the one I already have. I forked this from
+https://github.com/kevinclayland/WallCalToDo and am submitting pull
+requests back to it.  My actual calendar and to-do list live in Android
+apps: Calendar (backed by a Google/Gmail account), Tasks (backed
+by a Google/Gmail account), Outlook (backed by work a Microsoft account),
+and To Do (backed by work a Microsoft account). That's genuinely how I
+organize my life day to day, and I didn't want a wall display that meant
+switching to yet another app just so it had something to show.
 
 So instead of inventing its own data model, WallCalToDo reads straight from
-the same accounts my phone already syncs against — the Google Calendar API
-and the Microsoft Graph To Do API — rather than iCloud. Anything I add,
-check off, or move on my phone shows up on the wall (see "How it works"
-below for the polling delay), because it's the exact same underlying
-data, not a copy of it. The wall display itself is read-only, though —
-there's no touch input, so it's a one-way mirror of what's on my phone,
-not something you edit from.
+the same accounts my phone already syncs against — the Google Calendar/Task
+APIs and the Microsoft Graph APIs. Anything I add, check off, or move on my
+phone shows up on the wall (see "How it works" below for the polling delay),
+because it's the exact same underlying data, not a copy of it. The wall
+display itself is read-only, though — there's no touch input, so it's a
+one-way mirror of what's on my phone/laptop/desktop, not something you edit
+from.  You can probably change this if you want to make it so you can edit
+from a touch screen, I don't want to due to my kiddos.
 
-Reminders specifically needed Microsoft, not Google: the iOS Reminders app
-only syncs with accounts that support the underlying task-sync protocol —
-iCloud natively, and Microsoft via Exchange. Google was never an option
-there; adding a Google account in iOS only exposes Mail, Contacts,
-Calendars, and Notes, with no Reminders toggle at all. So Microsoft ended
-up being the practical alternative to iCloud for this. I linked my
-Microsoft account in Reminders' account settings, set it as the default
-account for new reminders, and moved my actual to-do list over to it — so
-Reminders on my phone and the to-do side of this wall display are now
-reading the same Microsoft-backed list.
-
-The only one-time cost is connecting a Google account in the iOS
-Mail/Calendar settings and a Microsoft account in Reminders' account
-settings if you haven't already — after that, nothing about how you
-actually use your phone changes. The wall display is just another window
-onto accounts you're already keeping up with.
 
 ## How it works
 
 ```
-Google Calendar API (N accounts) ─┐
+Google Calendar/Task API (N accounts) ─┐
                                     ├─ poll on interval (delta/sync tokens) ─ Node backend ─┬─ WebSocket ─ React kiosk app (Chromium fullscreen, portrait)
 Microsoft Graph API               ─┘                                                        └─ REST ────── React companion app (your phone, same Wi-Fi)
 ```
