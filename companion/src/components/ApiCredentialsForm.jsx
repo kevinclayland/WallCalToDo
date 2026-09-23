@@ -13,10 +13,15 @@ import { useState } from 'react';
 // backend) -- `status.configured` is all this has to go on to know one's
 // already on file, and the field just stays blank until you type a new
 // one.
-export default function ApiCredentialsForm({ providerLabel, redirectUri, helpSteps, status, onSave }) {
+//
+// `withTenantId` is Microsoft-only (Google has no equivalent concept) --
+// unlike the secret, the tenant ID isn't sensitive, so it's fine to
+// prefill it from `status.tenantId` and leave it filled in after a save.
+export default function ApiCredentialsForm({ providerLabel, redirectUri, helpSteps, status, onSave, withTenantId }) {
   const [expanded, setExpanded] = useState(!status?.configured);
   const [clientId, setClientId] = useState(status?.clientId || '');
   const [clientSecret, setClientSecret] = useState('');
+  const [tenantId, setTenantId] = useState(status?.tenantId || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -25,7 +30,11 @@ export default function ApiCredentialsForm({ providerLabel, redirectUri, helpSte
     setSaving(true);
     setError(null);
     try {
-      await onSave({ clientId: clientId.trim(), clientSecret: clientSecret.trim() });
+      await onSave({
+        clientId: clientId.trim(),
+        clientSecret: clientSecret.trim(),
+        ...(withTenantId ? { tenantId: tenantId.trim() } : {}),
+      });
       setClientSecret('');
       setExpanded(false);
     } catch (err) {
@@ -47,7 +56,10 @@ export default function ApiCredentialsForm({ providerLabel, redirectUri, helpSte
       </div>
 
       {status?.configured && !expanded ? (
-        <p className="api-credentials__status">Configured — Client ID ends in “…{status.clientId.slice(-6)}”.</p>
+        <p className="api-credentials__status">
+          Configured — Client ID ends in “…{status.clientId.slice(-6)}”.
+          {withTenantId && ` Tenant: ${status.tenantId || 'common'}.`}
+        </p>
       ) : (
         <>
           <details className="api-credentials__help">
@@ -77,6 +89,15 @@ export default function ApiCredentialsForm({ providerLabel, redirectUri, helpSte
               disabled={saving}
               onChange={(e) => setClientSecret(e.target.value)}
             />
+            {withTenantId && (
+              <input
+                type="text"
+                placeholder="Tenant ID (optional — default: common)"
+                value={tenantId}
+                disabled={saving}
+                onChange={(e) => setTenantId(e.target.value)}
+              />
+            )}
             <button
               type="submit"
               className="button button--primary"

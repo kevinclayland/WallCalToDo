@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 *.local
+package-lock.json
 
 # Local token/sync cache — never commit credentials.
 server/data/*.json

@@ -8,11 +8,33 @@ import { formatClock, formatShortDate } from '../utils/date.js';
 const TODO_FONT_MAX = 22;
 const TODO_FONT_MIN = 12;
 
-// Data shape: [{ id, title, completed, due, importance }]
+// Data shape: [{ id, title, completed, due, importance, dueHasTime? }]
+// `dueHasTime` defaults to true (Microsoft's due date/time is a real
+// instant) and is explicitly false for Google Tasks items, which only
+// ever carry a date -- see the comment on formatDue() below for why that
+// distinction matters for display, not just data fidelity.
 //
 // Checkboxes are purely a visual read/not-read indicator of each item's
 // real completion state — there's no touch input on this display to
 // toggle them.
+
+// Google's `due` is always UTC midnight for the date the user picked, with
+// no real time component. Parsing that normally and formatting it in the
+// display's local timezone shifts the calendar date back a day in any
+// timezone behind UTC (most of the US) -- e.g. a task due "Jan 15" would
+// show as "Jan 14, 7:00 PM" in US Eastern. Rebuilding the Date from its
+// UTC year/month/day as *local* components sidesteps that: the date
+// Google meant survives local-time formatting untouched, and the
+// meaningless midnight "time" is simply never rendered for these items.
+function resolveDueDisplay(due, dueHasTime) {
+  if (!due) return null;
+  const parsed = new Date(due);
+  if (dueHasTime === false) {
+    return { date: new Date(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()), hasTime: false };
+  }
+  return { date: parsed, hasTime: true };
+}
+
 export default function TodoView({ tasks, privacyMode, weather, settings }) {
   const listRef = useRef(null);
   const tasksSignature = tasks.map((task) => `${task.id}:${task.completed}`).join(',');
@@ -58,7 +80,7 @@ export default function TodoView({ tasks, privacyMode, weather, settings }) {
       ) : (
         <ul className="todo-list" ref={listRef}>
           {tasks.map((task) => {
-            const due = task.due ? new Date(task.due) : null;
+            const due = resolveDueDisplay(task.due, task.dueHasTime);
             return (
               <li key={task.id} className={`todo-list__item${task.completed ? ' is-completed' : ''}`}>
                 <span className="todo-list__checkbox" aria-hidden="true">
@@ -92,7 +114,8 @@ export default function TodoView({ tasks, privacyMode, weather, settings }) {
                   <span className="todo-list__title">{task.title}</span>
                   {due && (
                     <span className="todo-list__due">
-                      {formatShortDate(due)} • {formatClock(due)}
+                      {formatShortDate(due.date)}
+                      {due.hasTime ? <> • {formatClock(due.date)}</> : null}
                     </span>
                   )}
                 </span>

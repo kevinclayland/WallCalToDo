@@ -14,35 +14,52 @@ const save = (data) => writeJson(CREDENTIALS_FILE, data);
 function envDefaults(provider) {
   return provider === 'google'
     ? { clientId: config.google.clientId || '', clientSecret: config.google.clientSecret || '' }
-    : { clientId: config.ms.clientId || '', clientSecret: config.ms.clientSecret || '' };
+    : {
+        clientId: config.ms.clientId || '',
+        clientSecret: config.ms.clientSecret || '',
+        tenantId: config.ms.tenantId || 'common',
+      };
 }
 
-// { clientId, clientSecret } actually used to build the OAuth client —
+// { clientId, clientSecret, tenantId } actually used to build the OAuth client —
 // read by googleAuth.js/microsoftAuth.js, never by the companion app
 // directly (see getCredentialsStatus below for what that gets).
 export function getCredentials(provider) {
   const stored = load()[provider];
-  if (stored?.clientId && stored?.clientSecret) return stored;
-  return envDefaults(provider);
+  const fallback = envDefaults(provider);
+  if (stored?.clientId && stored?.clientSecret) {
+    // tenantId isn't required the way clientId/clientSecret are — an empty
+    // saved value should still fall back to the env default ('common'),
+    // not to an empty string.
+    return provider === 'ms'
+      ? { ...stored, tenantId: stored.tenantId || fallback.tenantId }
+      : stored;
+  }
+  return fallback;
 }
 
-export function setCredentials(provider, { clientId, clientSecret }) {
+export function setCredentials(provider, { clientId, clientSecret, tenantId }) {
   const data = load();
-  data[provider] = { clientId, clientSecret };
+  data[provider] = provider === 'ms'
+    ? { clientId, clientSecret, tenantId: tenantId || 'common' }
+    : { clientId, clientSecret };
   save(data);
 }
 
 // What the companion app's credentials form reads/shows: the client ID
-// (not sensitive, safe to echo back so the field isn't blank after a
-// reload) and whether a secret is actually on file -- the secret itself
-// is write-only, never sent back out once saved.
+// and tenant ID (neither sensitive, safe to echo back so the fields
+// aren't blank after a reload) and whether a secret is actually on file
+// -- the secret itself is write-only, never sent back out once saved.
 export function getCredentialsStatus() {
   const status = (provider) => {
     const stored = load()[provider];
     const fallback = envDefaults(provider);
     const clientId = stored?.clientId || fallback.clientId;
     const configured = Boolean((stored?.clientId && stored?.clientSecret) || (fallback.clientId && fallback.clientSecret));
-    return { clientId, configured };
+    const base = { clientId, configured };
+    return provider === 'ms'
+      ? { ...base, tenantId: stored?.tenantId || fallback.tenantId }
+      : base;
   };
   return { google: status('google'), ms: status('ms') };
 }

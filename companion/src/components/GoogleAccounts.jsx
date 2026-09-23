@@ -11,6 +11,7 @@ const GOOGLE_HELP_STEPS = [
   </>,
   <>
     <strong>APIs &amp; Services → Library</strong>, search "Google Calendar API", click <strong>Enable</strong>.
+    Do the same for "Google Tasks API" -- this section manages both from the same connected account.
   </>,
   <>
     <strong>APIs &amp; Services → OAuth consent screen</strong>: choose <strong>External</strong>, fill in an app
@@ -22,9 +23,12 @@ const GOOGLE_HELP_STEPS = [
   </>,
 ];
 
-// Google Calendar section: the credentials this deployment needs before it
-// can connect any account at all, then per-account calendar lists with
-// enable toggles, plus connect/refresh/disconnect actions.
+// Google Calendar + Google Tasks section: the credentials this deployment
+// needs before it can connect any account at all, then per-account
+// calendar and task lists with enable toggles, plus connect/refresh/
+// disconnect actions. Both live under one account since they're the same
+// Google connection -- there's no separate credentials form or connect
+// flow for Tasks.
 export default function GoogleAccounts({
   accounts,
   loading,
@@ -32,6 +36,7 @@ export default function GoogleAccounts({
   credentialsStatus,
   onSaveCredentials,
   onToggleCalendar,
+  onToggleTaskList,
   onRefreshAccount,
   onDisconnectAccount,
 }) {
@@ -40,8 +45,8 @@ export default function GoogleAccounts({
   return (
     <>
       <header className="page__header page__header--gap page__header--sub">
-        <h1>Google Calendar</h1>
-        <p className="page__subtitle">Manage which Google calendars show up on the display.</p>
+        <h1>Google Calendar &amp; Tasks</h1>
+        <p className="page__subtitle">Manage which Google calendars and task lists show up on the display.</p>
       </header>
 
       {/* Not rendered until the real status has loaded -- ApiCredentialsForm
@@ -76,7 +81,7 @@ export default function GoogleAccounts({
                   disabled={busyAccountId === account.id}
                   onClick={() => onRefreshAccount(account.id)}
                 >
-                  Refresh calendars
+                  Refresh
                 </button>
                 <button
                   className="button button--danger"
@@ -88,6 +93,7 @@ export default function GoogleAccounts({
               </div>
             </div>
 
+            <h3 className="account-card__subheading">Calendars</h3>
             <ul className="calendar-list">
               {account.calendars.map((cal) => (
                 <li key={cal.id} className="calendar-row">
@@ -104,6 +110,42 @@ export default function GoogleAccounts({
                 </li>
               ))}
               {account.calendars.length === 0 && <li className="calendar-row calendar-row--empty">No calendars found.</li>}
+            </ul>
+
+            <h3 className="account-card__subheading">Task lists</h3>
+            {!account.tasksScopeGranted && (
+              // This account was connected before Google Tasks support
+              // existed (or the permission was later revoked) -- its
+              // token doesn't include Tasks access, so task lists can't
+              // be fetched. There's no separate "reconnect" action; using
+              // "+ Add Google account" below with the same email re-runs
+              // the consent screen and merges into this same account
+              // (exchangeCode dedupes by email) rather than creating a
+              // duplicate.
+              <p className="banner banner--warning">
+                Google Tasks needs an extra permission for this account. Use "+ Add Google account" below with{' '}
+                <strong>{account.email}</strong> again to grant it.
+              </p>
+            )}
+            <ul className="calendar-list">
+              {(account.tasklists || []).map((list) => (
+                <li key={list.id} className="calendar-row">
+                  {/* No swatch here -- unlike calendars, Google Task lists
+                      carry no color of their own to show. */}
+                  <span className="calendar-row__label">{list.title}</span>
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      checked={list.enabled}
+                      onChange={(e) => onToggleTaskList(account.id, list.id, e.target.checked)}
+                    />
+                    <span className="switch__track" />
+                  </label>
+                </li>
+              ))}
+              {(account.tasklists || []).length === 0 && (
+                <li className="calendar-row calendar-row--empty">No task lists found.</li>
+              )}
             </ul>
           </section>
         ))}

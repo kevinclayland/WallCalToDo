@@ -31,7 +31,7 @@ const cachePlugin = {
 let msalClient = null;
 
 function getClient() {
-  const { clientId, clientSecret } = getCredentials('ms');
+  const { clientId, clientSecret, tenantId } = getCredentials('ms');
   if (!clientId || !clientSecret) {
     throw new Error('Microsoft OAuth is not configured — enter a Client ID/Secret in the companion app’s Microsoft To Do section.');
   }
@@ -39,7 +39,7 @@ function getClient() {
     msalClient = new ConfidentialClientApplication({
       auth: {
         clientId,
-        authority: `https://login.microsoftonline.com/${config.ms.tenantId}`,
+        authority: `https://login.microsoftonline.com/${tenantId}`,
         clientSecret,
       },
       cache: { cachePlugin },

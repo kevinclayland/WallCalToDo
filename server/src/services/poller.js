@@ -1,5 +1,7 @@
 import { pollCalendar, resetSyncTokens as resetCalendarSyncTokens } from './calendarService.js';
-import { pollTodo, clearCompletedTasks } from './todoService.js';
+import { pollTodo, clearCompletedTasks as clearCompletedMicrosoftTasks } from './todoService.js';
+import { pollTasks as pollGoogleTasks, clearCompletedTasks as clearCompletedGoogleTasks } from './googleTasksService.js';
+import { getMergedTasks } from './todoAggregator.js';
 import { getSettings } from './settingsService.js';
 import { pollWeather } from './weatherService.js';
 import { broadcast } from '../ws/hub.js';
@@ -27,8 +29,9 @@ async function runPoll() {
   // Once a week, as soon as the day rolls over to Monday -- getDay() === 1
   // -- rather than on a rolling "7 days since last cleanup" timer, so it
   // always lands on the same day regardless of when the server last
-  // restarted. Only ever removes completed tasks from the local cache
-  // (see clearCompletedTasks), never the real task in Microsoft To Do.
+  // restarted. Only ever removes completed tasks from each provider's
+  // local cache (see clearCompletedTasks in each service), never the real
+  // task in Microsoft To Do or Google Tasks.
   if (lastCompletedCleanupDay !== today && now.getDay() === 1) {
     // Wrapped like the calendar/todo polls below -- runPoll() is called
     // fire-and-forget from startPolling() with no caller to catch a
@@ -37,8 +40,9 @@ async function runPoll() {
     // restart hit the same failure again -- a permanent crash loop until
     // whatever caused it was fixed by hand).
     try {
-      const tasks = clearCompletedTasks();
-      broadcast({ type: 'todo', data: tasks });
+      clearCompletedMicrosoftTasks();
+      clearCompletedGoogleTasks();
+      broadcast({ type: 'todo', data: getMergedTasks() });
     } catch (err) {
       console.error('[poller] Weekly to-do cleanup failed:', err.message);
     }
@@ -69,12 +73,28 @@ async function runPoll() {
     console.error('[poller] Calendar poll failed:', err.message);
   }
 
+  // Both providers are polled unconditionally -- a failure in one
+  // shouldn't skip the other, same as calendar/todo/weather already don't
+  // take each other down. Either one reporting `changed` means the merged
+  // snapshot needs rebroadcasting (never just the one provider's own
+  // tasks -- see todoAggregator.js for why).
+  let todoChanged = false;
+
   try {
-    const { changed, tasks } = await pollTodo();
-    if (changed) broadcast({ type: 'todo', data: tasks });
+    const { changed } = await pollTodo();
+    todoChanged = todoChanged || changed;
   } catch (err) {
-    console.error('[poller] Todo poll failed:', err.message);
+    console.error('[poller] Microsoft To Do poll failed:', err.message);
   }
+
+  try {
+    const { changed } = await pollGoogleTasks();
+    todoChanged = todoChanged || changed;
+  } catch (err) {
+    console.error('[poller] Google Tasks poll failed:', err.message);
+  }
+
+  if (todoChanged) broadcast({ type: 'todo', data: getMergedTasks() });
 
   // Nowhere to fetch weather *for* without a saved location -- skipped
   // entirely rather than erroring every cycle until one's set.
