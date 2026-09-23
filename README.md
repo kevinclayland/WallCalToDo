@@ -55,9 +55,9 @@ from a touch screen, I don't want to due to my kiddos.
 ## How it works
 
 ```
-Google Calendar/Task API (N accounts) ─┐
+Google Calendar/Task API (N accounts)    ─┐
                                     ├─ poll on interval (delta/sync tokens) ─ Node backend ─┬─ WebSocket ─ React kiosk app (Chromium fullscreen, portrait)
-Microsoft Graph API               ─┘                                                        └─ REST ────── React companion app (your phone, same Wi-Fi)
+Microsoft Graph API                ─┘                                                        └─ REST ────── React companion app (your phone, same Wi-Fi)
 ```
 
 - **server/** — Node/Express backend. Handles OAuth for any number of
@@ -320,7 +320,7 @@ node -v   # should print v20.x — if it doesn't, something above failed
 ### 4. Get the code onto the Pi
 
 ```
-git clone https://github.com/kevinclayland/WallCalToDo.git
+git clone https://github.com/smccloud/WallCalToDo.git
 cd WallCalToDo
 cp server/.env.example server/.env
 ```
