@@ -59,6 +59,9 @@ accountsRouter.post('/todo/refresh', async (req, res) => {
 });
 
 accountsRouter.delete('/accounts/:accountId', (req, res) => {
+  if (!googleAuth.listAccounts().some((account) => account.id === req.params.accountId)) {
+    return res.status(404).json({ error: `Unknown Google account: ${req.params.accountId}` });
+  }
   googleAuth.removeAccount(req.params.accountId);
   dropAccountCache(req.params.accountId);
   broadcast({ type: 'calendar', data: getCachedEvents() });
